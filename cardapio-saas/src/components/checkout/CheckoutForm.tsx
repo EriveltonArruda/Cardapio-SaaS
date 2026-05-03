@@ -99,13 +99,14 @@ export function CheckoutForm() {
       // 2. WHATSAPP DINÂMICO VIA BUSCA DE STORE_SETTINGS
       const settingsRes = await supabase
         .from('store_settings')
-        .select('phone')
+        .select('phone, store_name')
         .eq('store_id', store.id)
         .single();
 
-      const rawPhone = settingsRes.data?.phone?.replace(/\D/g, '') || store.whatsapp_number?.replace(/\D/g, '') || "81979158040";
+      // Tenta pegar o número configurado no Settings, senão cai pro Fallback
+      const rawPhone = settingsRes.data?.phone?.replace(/\D/g, '') || "81979158040";
       const storePhone = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`;
-      const storeName = store.name || "Loja";
+      const storeName = settingsRes.data?.store_name || store.name || "Loja";
 
       // 3. MONTAGEM DA MENSAGEM DO WHATSAPP (TEXTO LIMPO)
       let message = `*PEDIDO #${orderId} - ${storeName.toUpperCase()}*\n`;
@@ -131,7 +132,7 @@ export function CheckoutForm() {
 
       message += `\n------------------------------------------\n`;
       message += `*PAGAMENTO:* _A combinar via WhatsApp._\n\n`;
-      message += `_Pedido gerado pelo Cardápio Digital Expresso Bebidas_`;
+      message += `_Pedido gerado pelo Cardápio Digital_`;
 
       // 4. CODIFICAÇÃO E ENVIO
       const encodedMessage = encodeURIComponent(message);
@@ -163,8 +164,8 @@ export function CheckoutForm() {
         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
           <MapPin className="text-primary w-6 h-6" />
         </div>
-        <h2 className="text-xl font-black uppercase tracking-tighter text-black">Entrega em Gravatá</h2>
-        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1 text-black">
+        <h2 className="text-xl font-black uppercase tracking-tighter text-black">Entrega do Pedido</h2>
+        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
           Preencha os dados para finalizar
         </p>
       </div>
@@ -263,7 +264,7 @@ export function CheckoutForm() {
         <button
           type="submit"
           disabled={!isValid || isSubmitting}
-          className="w-full bg-primary text-black h-16 rounded-[24px] shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50 font-black uppercase tracking-widest"
+          className="w-full bg-primary text-black h-16 rounded-3xl shadow-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all disabled:opacity-50 font-black uppercase tracking-widest"
         >
           {isSubmitting ? (
             <Loader2 className="animate-spin w-6 h-6" />

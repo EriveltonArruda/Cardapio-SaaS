@@ -1,67 +1,34 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-ring: var(--ring);
-
-  /* Correção para o erro bg-card */
+  --color-background: var(--background);
   --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-
-  --color-badge-cold: var(--badge-cold);
-  --color-badge-alcoholic: var(--badge-alcoholic);
-  --color-badge-container: var(--badge-container);
+  --color-accent: var(--accent);
+  --color-border: var(--border); /* Garante que a utilidade border-border exista */
 }
 
 :root {
   --background: #fcfcfc;
-  --foreground: #111111;
-
   --card: #ffffff;
-  --card-foreground: #111111;
-
-  --popover: #ffffff;
-  --popover-foreground: #111111;
-
+  
+  /* Cores Dinâmicas */
   --primary: #FFB800;
   --primary-foreground: #111111;
-
   --secondary: #F1F5F9;
-  --secondary-foreground: #334155;
-
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
-
-  --accent: #FFB800;
-  --accent-foreground: #111111;
-
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
+  
+  --header-bg: var(--primary);
+  --header-foreground: var(--primary-foreground);
+  --category-card-bg: var(--primary);
+  --price-color: var(--primary);
+  --ring: var(--primary);
+  --accent: var(--primary);
 
   --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #FFB800;
-
-  --header-bg: #FFB800;
-  --header-foreground: #111111;
-  --category-card-bg: #FFB800;
-  --price-color: #EAB308;
+  --foreground: #111111;
+  
   --badge-cold: #0088CC;
   --badge-alcoholic: #9D4EDD;
   --badge-container: #F97316;
@@ -69,9 +36,9 @@
 
 @layer base {
   * {
-    @apply border-border;
+    /* Substituímos o @apply problemático por uma variável direta */
+    border-color: var(--border);
   }
-
   body {
     background-color: var(--background);
     color: var(--foreground);
@@ -80,36 +47,35 @@
 }
 
 @layer components {
+  .header-gradient {
+    background: var(--header-bg);
+    color: var(--header-foreground);
+  }
+  
   .category-card {
     @apply relative overflow-hidden rounded-lg transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98];
     background: var(--category-card-bg);
   }
 
-  .product-badge {
-    @apply inline-flex items-center gap-1 text-xs font-medium;
-  }
-
-  .product-badge-cold {
-    @apply text-[var(--badge-cold)];
-  }
-
-  .product-badge-alcoholic {
-    @apply text-[var(--badge-alcoholic)];
-  }
-
-  .product-badge-container {
-    @apply text-[var(--badge-container)];
-  }
-
   .price-tag {
-    @apply font-bold text-[var(--price-color)];
+    @apply font-black;
+    color: var(--price-color);
   }
-
+  
   .cart-item-row {
-    @apply flex items-center gap-3 py-4 border-b border-border last:border-b-0;
+    @apply flex items-center gap-3 py-4 border-b last:border-b-0;
   }
 
-  .header-gradient {
-    background: var(--header-bg);
+  .product-badge {
+    @apply inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full;
+  }
+  .product-badge-cold {
+    @apply text-[var(--badge-cold)] bg-[var(--badge-cold)]/10;
+  }
+  .product-badge-alcoholic {
+    @apply text-[var(--badge-alcoholic)] bg-[var(--badge-alcoholic)]/10;
+  }
+  .product-badge-container {
+    @apply text-[var(--badge-container)] bg-[var(--badge-container)]/10;
   }
 }

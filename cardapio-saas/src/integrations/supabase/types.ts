@@ -20,6 +20,11 @@ export type Database = {
           logo_url: string | null
           created_at: string | null
           updated_at: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          is_active: boolean | null
+          is_open: boolean | null
+          address: string | null
         }
         Insert: {
           id?: string
@@ -28,6 +33,11 @@ export type Database = {
           logo_url?: string | null
           created_at?: string | null
           updated_at?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          is_active?: boolean | null
+          is_open?: boolean | null
+          address?: string | null
         }
         Update: {
           id?: string
@@ -36,6 +46,11 @@ export type Database = {
           logo_url?: string | null
           created_at?: string | null
           updated_at?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          is_active?: boolean | null
+          is_open?: boolean | null
+          address?: string | null
         }
         Relationships: []
       }
@@ -118,15 +133,70 @@ export type Database = {
           }
         ]
       }
+      orders: {
+        Row: {
+          id: string
+          store_id: string
+          customer_name: string
+          customer_phone: string
+          address_street: string
+          address_number: string
+          address_neighborhood: string
+          address_landmark: string
+          items: Json
+          total_amount: number
+          status: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          store_id: string
+          customer_name: string
+          customer_phone: string
+          address_street: string
+          address_number: string
+          address_neighborhood: string
+          address_landmark: string
+          items: Json
+          total_amount: number
+          status?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          store_id?: string
+          customer_name?: string
+          customer_phone?: string
+          address_street?: string
+          address_number?: string
+          address_neighborhood?: string
+          address_landmark?: string
+          items?: Json
+          total_amount?: number
+          status?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       products: {
         Row: {
           id: string
           store_id: string
           category_id: string | null
-          promotion_id: string | null // ✅ Adicionado para o vínculo com ofertas
+          promotion_id: string | null
           name: string
           description: string | null
           price: number
+          original_price: number | null
+          promo_price: number | null
           image_url: string | null
           is_cold: boolean | null
           is_alcoholic: boolean | null
@@ -134,6 +204,8 @@ export type Database = {
           is_suggestion: boolean | null
           sort_order: number | null
           is_active: boolean | null
+          is_available: boolean | null
+          is_promo: boolean | null
           created_at: string | null
           updated_at: string | null
         }
@@ -145,6 +217,8 @@ export type Database = {
           name: string
           description?: string | null
           price: number
+          original_price?: number | null
+          promo_price?: number | null
           image_url?: string | null
           is_cold?: boolean | null
           is_alcoholic?: boolean | null
@@ -152,6 +226,8 @@ export type Database = {
           is_suggestion?: boolean | null
           sort_order?: number | null
           is_active?: boolean | null
+          is_available?: boolean | null
+          is_promo?: boolean | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -163,6 +239,8 @@ export type Database = {
           name?: string
           description?: string | null
           price?: number
+          original_price?: number | null
+          promo_price?: number | null
           image_url?: string | null
           is_cold?: boolean | null
           is_alcoholic?: boolean | null
@@ -170,6 +248,8 @@ export type Database = {
           is_suggestion?: boolean | null
           sort_order?: number | null
           is_active?: boolean | null
+          is_available?: boolean | null
+          is_promo?: boolean | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -197,7 +277,7 @@ export type Database = {
           }
         ]
       }
-      promotions: { // ✅ TABELA DE PROMOÇÕES COMPLETA
+      promotions: {
         Row: {
           id: string
           store_id: string
@@ -205,6 +285,7 @@ export type Database = {
           description: string | null
           image_url: string | null
           is_active: boolean | null
+          sort_order: number
           created_at: string | null
         }
         Insert: {
@@ -214,6 +295,7 @@ export type Database = {
           description?: string | null
           image_url?: string | null
           is_active?: boolean | null
+          sort_order?: number
           created_at?: string | null
         }
         Update: {
@@ -223,6 +305,7 @@ export type Database = {
           description?: string | null
           image_url?: string | null
           is_active?: boolean | null
+          sort_order?: number
           created_at?: string | null
         }
         Relationships: [
@@ -235,74 +318,59 @@ export type Database = {
           }
         ]
       }
-      product_suggestions: {
-        Row: {
-          id: string
-          product_id: string
-          suggested_product_id: string
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          product_id: string
-          suggested_product_id: string
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          product_id?: string
-          suggested_product_id?: string
-          created_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "product_suggestions_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "product_suggestions_suggested_product_id_fkey"
-            columns: ["suggested_product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       store_settings: {
         Row: {
           id: string
-          delivery_fee: number | null
-          minimum_order: number | null
-          opening_hours: string
+          store_id: string
+          store_name: string
+          phone: string | null
+          address: string | null
+          logo_url: string | null
+          banner_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          opening_hours_week: string | null
+          opening_hours_weekend: string | null
+          opening_hours_sunday: string | null
+          is_open: boolean | null
           updated_at: string | null
-          whatsapp_number: string
-          created_at: string | null
         }
         Insert: {
-          id: string
-          delivery_fee?: number | null
-          minimum_order?: number | null
-          opening_hours?: string
+          id?: string
+          store_id: string
+          store_name: string
+          phone?: string | null
+          address?: string | null
+          logo_url?: string | null
+          banner_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          opening_hours_week?: string | null
+          opening_hours_weekend?: string | null
+          opening_hours_sunday?: string | null
+          is_open?: boolean | null
           updated_at?: string | null
-          whatsapp_number: string
-          created_at?: string | null
         }
         Update: {
           id?: string
-          delivery_fee?: number | null
-          minimum_order?: number | null
-          opening_hours?: string
+          store_id?: string
+          store_name?: string
+          phone?: string | null
+          address?: string | null
+          logo_url?: string | null
+          banner_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          opening_hours_week?: string | null
+          opening_hours_weekend?: string | null
+          opening_hours_sunday?: string | null
+          is_open?: boolean | null
           updated_at?: string | null
-          whatsapp_number?: string
-          created_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "store_settings_id_fkey"
-            columns: ["id"]
+            foreignKeyName: "store_settings_store_id_fkey"
+            columns: ["store_id"]
             isOneToOne: true
             referencedRelation: "stores"
             referencedColumns: ["id"]
@@ -356,7 +424,6 @@ export type Database = {
   }
 }
 
-// Helpers de utilitários para facilitar o uso no frontend
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 

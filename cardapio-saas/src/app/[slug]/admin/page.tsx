@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation"; // Adicionado useRouter
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ import { PromotionsTab } from "@/components/admin/PromotionsTab";
 import { OrdersTab } from "@/components/admin/OrdersTab";
 
 export default function Admin() {
-  // CORREÇÃO TS: Destructuring com tipagem explícita
   const params = useParams();
   const slug = params?.slug as string;
   const router = useRouter();
@@ -29,7 +28,6 @@ export default function Admin() {
     try {
       await supabase.auth.signOut();
       localStorage.clear();
-      // ✅ Redirecionamento dinâmico usando o slug
       router.push(`/${slug}/admin/login`);
     } catch (err) {
       router.push(`/${slug}/admin/login`);
@@ -91,12 +89,12 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-muted/30 pb-20">
-      {/* ... (restante do seu JSX de UI permanece igual) ... */}
       <header className="bg-card border-b sticky top-0 z-50">
         <div className="container flex items-center justify-between py-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-lg font-bold text-primary-foreground">
-              🍺
+            {/* Ícone de Engrenagem substituindo a cerveja */}
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground shadow-sm">
+              <Settings className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-lg font-bold">Painel Admin</h1>
@@ -112,22 +110,22 @@ export default function Admin() {
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full flex justify-start overflow-x-auto h-auto p-1 bg-background/50 backdrop-blur rounded-xl gap-2 mb-6 no-scrollbar border">
-            <TabsTrigger value="orders" className="flex-1 min-w-[100px] gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="orders" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <ShoppingBag className="w-4 h-4" /> Pedidos
             </TabsTrigger>
-            <TabsTrigger value="products" className="flex-1 min-w-[100px] gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="products" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Package className="w-4 h-4" /> Produtos
             </TabsTrigger>
-            <TabsTrigger value="categories" className="flex-1 min-w-[100px] gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="categories" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <FolderOpen className="w-4 h-4" /> Categorias
             </TabsTrigger>
-            <TabsTrigger value="addons" className="flex-1 min-w-[100px] gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="addons" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Coffee className="w-4 h-4" /> Sugestões
             </TabsTrigger>
-            <TabsTrigger value="promotions" className="flex-1 min-w-[100px] gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="promotions" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Gift className="w-4 h-4" /> Promoções
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 min-w-[100px] gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="settings" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Settings className="w-4 h-4" /> Config
             </TabsTrigger>
           </TabsList>

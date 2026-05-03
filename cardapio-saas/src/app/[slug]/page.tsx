@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { BannerCarousel } from "@/components/home/BannerCarousel";
@@ -31,19 +32,32 @@ interface Promotion {
 export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const { store } = useStore();
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
+  // Pegamos os dados e o estado de carregamento do contexto global da loja
+  const { store, isLoading: isStoreLoading } = useStore();
+  const router = useRouter();
+
+  // 🛡️ TRAVA DE SEGURANÇA: Redireciona se o slug for inválido ou não existir no banco
+  useEffect(() => {
+    if (!isStoreLoading && !store) {
+      console.warn("⚠️ Loja não encontrada. Redirecionando para o portal...");
+      router.replace('/');
+    }
+  }, [store, isStoreLoading, router]);
+
+  // Efeito para carregar Categorias e Promoções vinculadas à loja encontrada
   useEffect(() => {
     let isMounted = true;
 
     const loadHomeData = async () => {
       try {
-        console.log("🔄 Sincronizando dados com o banco...");
         if (!store?.id) return;
 
+        setIsDataLoading(true);
+        console.log("🔄 Sincronizando dados com o banco...");
+
         const [catRes, promoRes] = await Promise.all([
-          // AJUSTE N2: Mudado de sort_order.asc para name.asc para ordem alfabética
           supabase
             .from('categories')
             .select('*,products(promotion_id)')
@@ -65,7 +79,6 @@ export default function Home() {
             ...cat,
             has_promotion: cat.products?.some((p: any) => p.promotion_id !== null)
           }));
-
           setCategories(categoriesWithPromo);
         }
 
@@ -76,7 +89,7 @@ export default function Home() {
       } catch (err) {
         console.error("Erro na conexão com o Supabase:", err);
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) setIsDataLoading(false);
       }
     };
 
@@ -84,6 +97,22 @@ export default function Home() {
     return () => { isMounted = false; };
   }, [store?.id]);
 
+  // 1. Enquanto o Contexto valida a loja no Supabase
+  if (isStoreLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-amber-400" />
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+          Validando acesso...
+        </p>
+      </div>
+    );
+  }
+
+  // 2. Se a loja não existe, não renderizamos nada (o useEffect fará o redirecionamento)
+  if (!store) return null;
+
+  // 3. Renderização do Cardápio real
   return (
     <AppContainer>
       <div className="min-h-screen bg-background pb-20">
@@ -93,17 +122,21 @@ export default function Home() {
         <BannerCarousel promotions={promotions} />
 
         <div className="p-4">
-          <h2 className="text-lg font-bold mb-4 uppercase tracking-tight text-slate-900">Categorias</h2>
+          <h2 className="text-lg font-black mb-4 uppercase tracking-tight text-slate-900">Categorias</h2>
 
-          {isLoading ? (
+          {isDataLoading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                {store?.name || 'Sua Loja'}: Atualizando...
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-center">
+                {store.name}: Atualizando...
               </p>
             </div>
           ) : categories.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Nenhuma categoria disponível.</p>
+            <div className="text-center py-12 px-6 border-2 border-dashed border-slate-100 rounded-3xl">
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                Nenhuma categoria disponível no momento.
+              </p>
+            </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               {categories.map((category) => (
