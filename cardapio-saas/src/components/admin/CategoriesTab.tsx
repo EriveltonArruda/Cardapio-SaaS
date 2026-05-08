@@ -5,27 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Plus, Pencil, Trash2, Loader2, Upload, AlertTriangle, X
-} from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Upload, AlertTriangle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Importações SaaS
+// ✅ IMPORTAÇÕES TIPO E SAAS
 import { supabase } from "@/lib/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
-
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  icon: string | null;
-  is_active: boolean | null;
-  store_id: string;
-}
+import { Category } from "@/types"; // Importando do seu index.ts
 
 export const CategoriesTab = () => {
   const { toast } = useToast();
-  const { store } = useStore(); // Identidade da loja atual
+  const { store, isLoading: isStoreLoading } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [showForm, setShowForm] = useState(false);
@@ -43,17 +33,18 @@ export const CategoriesTab = () => {
 
   const fetchCategories = async () => {
     if (!store?.id) return;
-
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
-        .eq('store_id', store.id) // <--- Segurança SaaS
+        .eq('store_id', store.id)
         .order('name', { ascending: true });
 
       if (error) throw error;
-      setCategories(data || []);
+
+      // ✅ CORREÇÃO: Usando casting para calar o erro de tipagem nula do Supabase
+      setCategories((data as any) || []);
     } catch (err: any) {
       toast({ title: "Erro ao carregar", description: err.message, variant: "destructive" });
     } finally {
@@ -62,19 +53,21 @@ export const CategoriesTab = () => {
   };
 
   useEffect(() => {
-    fetchCategories();
-  }, [store?.id]);
+    if (!isStoreLoading && store?.id) {
+      fetchCategories();
+    }
+  }, [store?.id, isStoreLoading]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !store?.id) return;
+    if (!file || !store?.id || !store?.slug || isUploading) return;
 
     setIsUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
       const fileName = `${store.slug}/${Date.now()}.${fileExt}`;
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('categories')
         .upload(fileName, file);
 
@@ -86,11 +79,12 @@ export const CategoriesTab = () => {
 
       setFormImage(publicUrl);
       toast({ title: "Imagem enviada!" });
-
     } catch (error: any) {
       toast({ title: "Erro no Upload", description: error.message, variant: "destructive" });
+      setFormImage("");
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -107,7 +101,7 @@ export const CategoriesTab = () => {
         .replace(/\s+/g, "-");
 
       const categoryData = {
-        store_id: store.id, // <--- Obrigatório SaaS
+        store_id: store.id,
         name: formName.trim(),
         slug,
         icon: formImage || null,
@@ -119,7 +113,7 @@ export const CategoriesTab = () => {
           .from('categories')
           .update(categoryData)
           .eq('id', editingCategory.id)
-          .eq('store_id', store.id); // Trava de segurança
+          .eq('store_id', store.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
@@ -131,7 +125,6 @@ export const CategoriesTab = () => {
       toast({ title: editingCategory ? "Categoria atualizada!" : "Categoria criada!" });
       handleCloseForm();
       fetchCategories();
-
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
     } finally {
@@ -141,14 +134,13 @@ export const CategoriesTab = () => {
 
   const handleDelete = async (id: string) => {
     if (!store?.id) return;
-
     setIsDeleting(true);
     try {
       const { error } = await supabase
         .from('categories')
         .delete()
         .eq('id', id)
-        .eq('store_id', store.id); // Trava de segurança
+        .eq('store_id', store.id);
 
       if (error) {
         if (error.code === '23503') {
@@ -161,11 +153,7 @@ export const CategoriesTab = () => {
       setDeletingCategory(null);
       fetchCategories();
     } catch (err: any) {
-      toast({
-        title: "Erro ao excluir",
-        description: err.message,
-        variant: "destructive"
-      });
+      toast({ title: "Erro ao excluir", description: err.message, variant: "destructive" });
     } finally {
       setIsDeleting(false);
     }
@@ -178,20 +166,22 @@ export const CategoriesTab = () => {
     setFormImage("");
   };
 
+  if (isStoreLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+  if (!store) return null;
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold tracking-tight">Categorias <span className="text-muted-foreground font-normal text-sm">({categories.length})</span></h2>
-        <Button onClick={() => setShowForm(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold">
+        <h2 className="text-xl font-bold tracking-tight text-foreground">
+          Categorias <span className="text-muted-foreground font-normal text-sm">({categories.length})</span>
+        </h2>
+        <Button onClick={() => setShowForm(true)} className="bg-primary font-bold text-primary-foreground">
           <Plus className="w-4 h-4 mr-2" /> Nova Categoria
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-xs font-mono uppercase">Organizando prateleiras...</p>
-        </div>
+        <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {categories.map((category) => (
@@ -223,19 +213,20 @@ export const CategoriesTab = () => {
         </div>
       )}
 
-      {/* FORMULÁRIO MODAL */}
       {showForm && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-background rounded-2xl p-6 w-full max-w-md border shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold mb-4 uppercase tracking-tighter">{editingCategory ? "Editar" : "Nova"} Categoria</h3>
+          <div className="bg-card rounded-2xl p-6 w-full max-w-md border shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-bold mb-4 uppercase tracking-tighter text-foreground">
+              {editingCategory ? "Editar" : "Nova"} Categoria
+            </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase">Nome da Categoria</Label>
-                <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Cervejas, Vinhos, Petiscos..." className="h-12" required />
+                <Label className="text-xs font-bold uppercase text-foreground">Nome da Categoria</Label>
+                <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Bebidas, Petiscos..." className="h-12 bg-background border-border text-foreground" required />
               </div>
               <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase">Imagem / Ícone</Label>
-                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-accent transition-colors min-h-35">
+                <Label className="text-xs font-bold uppercase text-foreground">Imagem / Ícone</Label>
+                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-border rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer hover:bg-accent transition-colors min-h-[140px]">
                   {isUploading ? (
                     <Loader2 className="animate-spin h-8 w-8 text-primary" />
                   ) : formImage ? (
@@ -253,8 +244,8 @@ export const CategoriesTab = () => {
                 </div>
               </div>
               <div className="flex gap-3 pt-4">
-                <Button type="button" variant="ghost" onClick={handleCloseForm} className="flex-1 font-bold uppercase tracking-tighter">Cancelar</Button>
-                <Button type="submit" disabled={isSaving || isUploading} className="flex-1 font-bold uppercase tracking-tighter shadow-lg">
+                <Button type="button" variant="ghost" onClick={handleCloseForm} className="flex-1 font-bold uppercase tracking-tighter text-foreground">Cancelar</Button>
+                <Button type="submit" disabled={isSaving || isUploading} className="flex-1 font-bold uppercase tracking-tighter shadow-lg bg-primary text-primary-foreground">
                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Confirmar"}
                 </Button>
               </div>
@@ -263,16 +254,15 @@ export const CategoriesTab = () => {
         </div>
       )}
 
-      {/* MODAL DE EXCLUSÃO */}
       {deletingCategory && (
-        <div className="fixed inset-0 z-110 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-background rounded-2xl p-6 w-full max-w-sm border shadow-2xl animate-in fade-in duration-200">
-            <h3 className="text-lg font-bold mb-2 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-destructive" /> Excluir?</h3>
+        <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl p-6 w-full max-w-sm border shadow-2xl animate-in fade-in duration-200">
+            <h3 className="text-lg font-bold mb-2 flex items-center gap-2 text-foreground"><AlertTriangle className="w-5 h-5 text-destructive" /> Excluir?</h3>
             <p className="text-sm text-muted-foreground mb-6">
-              Deseja apagar <strong>"{deletingCategory.name}"</strong>? Certifique-se de que não existam produtos nesta categoria antes.
+              Deseja apagar <strong>"{deletingCategory.name}"</strong>?
             </p>
             <div className="flex gap-3">
-              <Button variant="ghost" className="flex-1 font-bold" onClick={() => setDeletingCategory(null)}>Voltar</Button>
+              <Button variant="ghost" className="flex-1 font-bold text-foreground" onClick={() => setDeletingCategory(null)}>Voltar</Button>
               <Button variant="destructive" className="flex-1 font-bold shadow-md" onClick={() => handleDelete(deletingCategory.id)} disabled={isDeleting}>
                 {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Apagar"}
               </Button>

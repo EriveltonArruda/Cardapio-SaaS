@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { useParams } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { useStore } from "@/contexts/StoreContext";
 
@@ -23,6 +22,7 @@ export interface CartAddon {
 export interface CartItem {
   product: CartProduct;
   quantity: number;
+  // Estrutura mantida para compatibilidade
   selectedAddons: { addon: CartAddon; quantity: number }[];
   observations: string;
 }
@@ -49,7 +49,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // ESTRATÉGIA N2: Hidratação (Evita erro de SSR e lê localStorage via Client-Side)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedCart = localStorage.getItem(storageKey);
@@ -64,17 +63,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setIsHydrated(true);
   }, [storageKey]);
 
-  // Salva no LocalStorage sempre que o carrinho mudar
   useEffect(() => {
     if (isHydrated) {
       localStorage.setItem(storageKey, JSON.stringify(items));
     }
   }, [items, isHydrated, storageKey]);
 
-  const addToCart = (product: any, quantity: number, selectedAddons: any[], observations: string) => {
+  const addToCart = (product: any, quantity: number, addonsReceived: any[], observations: string) => {
+    // 🛡️ CORREÇÃO: Transforma o array simples do Modal na estrutura que o Contexto usa
+    const formattedAddons = addonsReceived.map(addon => ({
+      addon: addon,
+      quantity: 1 // Adicionais de categoria geralmente são selecionados uma vez
+    }));
+
     setItems((prev) => {
+      // Verifica se já existe o mesmo produto com as mesmas observações E mesmos adicionais
       const existingItemIndex = prev.findIndex(
-        (item) => item.product.id === product.id && item.observations === observations
+        (item) =>
+          item.product.id === product.id &&
+          item.observations === observations &&
+          JSON.stringify(item.selectedAddons) === JSON.stringify(formattedAddons)
       );
 
       if (existingItemIndex >= 0) {
@@ -83,10 +91,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return newItems;
       }
 
-      return [...prev, { product, quantity, selectedAddons, observations }];
+      return [...prev, { product, quantity, selectedAddons: formattedAddons, observations }];
     });
 
-    // MELHORIA DE UX: Duração reduzida para 2 segundos (2000ms)
     toast({
       title: "Adicionado ao carrinho!",
       duration: 2000,
@@ -105,26 +112,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter((item) => item.product.id !== productId));
   };
 
-  const addAddonToItem = (productId: string, addon: CartAddon) => {
-    setItems((prev) => {
-      return prev.map((item) => {
-        if (item.product.id === productId) {
-          const existingAddonIndex = item.selectedAddons.findIndex(a => a.addon.id === addon.id);
-          let newSelectedAddons;
-
-          if (existingAddonIndex >= 0) {
-            newSelectedAddons = [...item.selectedAddons];
-            newSelectedAddons[existingAddonIndex].quantity += 1;
-          } else {
-            newSelectedAddons = [...item.selectedAddons, { addon: addon, quantity: 1 }];
-          }
-          return { ...item, selectedAddons: newSelectedAddons };
-        }
-        return item;
-      });
-    });
-  };
-
   const clearCart = () => {
     setItems([]);
     localStorage.removeItem(storageKey);
@@ -132,9 +119,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const getTotal = () => {
     return items.reduce((total, item) => {
-      const itemTotal = item.product.price * item.quantity;
-      const addonsTotal = item.selectedAddons.reduce((sum, acc) => sum + (acc.addon.price * acc.quantity), 0);
-      return total + itemTotal + addonsTotal;
+      const itemPrice = item.product?.price || 0;
+
+      // 🛡️ PROTEÇÃO: Verifica se acc (item do loop) e acc.addon existem antes de ler o price
+      const addonsTotal = item.selectedAddons?.reduce((sum, acc) => {
+        const addonPrice = acc.addon?.price || 0;
+        return sum + (addonPrice * (acc.quantity || 1));
+      }, 0) || 0;
+
+      return total + (itemPrice + addonsTotal) * item.quantity;
     }, 0);
   };
 
@@ -148,7 +141,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         addItem: addToCart,
         removeFromCart,
         updateQuantity,
-        addAddonToItem,
+        addAddonToItem: () => { }, // Mantido por compatibilidade
         removeItem: removeFromCart,
         clearCart,
         getTotal,

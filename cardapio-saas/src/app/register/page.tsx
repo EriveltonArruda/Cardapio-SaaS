@@ -48,7 +48,7 @@ export default function RegisterPage() {
         .insert([{
           store_id: store.id,
           store_name: formData.name,
-          primary_color: "#FFB800",
+          primary_color: "#1caf08",
           secondary_color: "#F1F5F9",
           text_color: "#111111",
           is_open: true
@@ -95,19 +95,19 @@ export default function RegisterPage() {
         </button>
 
         <div className="flex items-center gap-4 mb-10">
-          <div className="w-14 h-14 bg-amber-400 rounded-2xl flex items-center justify-center shadow-lg rotate-3">
+          <div className="w-14 h-14 bg-[#1caf08] rounded-2xl flex items-center justify-center shadow-lg rotate-3">
             <Store className="w-7 h-7 text-slate-900" />
           </div>
           <div className="text-left">
             <h1 className="text-2xl font-black uppercase tracking-tighter leading-none text-slate-900">Novo Cardápio</h1>
-            <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mt-1">SaaS Multi-tenant v1.0</p>
+            <p className="text-[10px] font-black text-[#1caf08] uppercase tracking-widest mt-1">SaaS Multi-tenant v1.0</p>
           </div>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-6">
           {error && (
             <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-[11px] font-black flex items-center gap-3 rounded-r-xl uppercase tracking-wider">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
+              <AlertCircle className="w-4 h-4 shrink-0" /> {error}
             </div>
           )}
 
@@ -118,7 +118,7 @@ export default function RegisterPage() {
               placeholder="Ex: Zezinho Lanches"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="h-14 rounded-xl border-2 border-slate-100 font-bold text-lg focus:border-amber-400 focus:ring-0 transition-all"
+              className="h-14 rounded-xl border-2 border-slate-100 font-bold text-lg focus:border-[#1caf08] focus:ring-0 transition-all"
             />
           </div>
 
@@ -126,14 +126,14 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-16 rounded-2xl bg-amber-400 hover:bg-amber-500 text-slate-900 font-black uppercase tracking-[0.2em] text-xs shadow-xl active:scale-95 transition-all"
+              className="w-full h-16 rounded-2xl bg-[#1caf08] hover:bg-green-500 text-slate-900 font-black uppercase tracking-[0.2em] text-xs shadow-xl active:scale-95 transition-all"
             >
               {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Criar Meu Cardápio Agora"}
             </Button>
           </div>
         </form>
 
-        <footer className="mt-auto pt-10 text-[9px] text-slate-300 text-center uppercase leading-relaxed font-bold tracking-widest">
+        <footer className="mt-auto pt-10 text-[9px] text-black text-center uppercase leading-relaxed font-bold tracking-widest">
           Ao criar sua loja, você aceita nossos <br /> termos de uso e políticas de privacidade.
         </footer>
       </div>

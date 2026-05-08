@@ -9,7 +9,7 @@ interface Category {
   name: string;
   slug: string;
   icon?: string | null;
-  has_promotion?: boolean; // Nova propriedade para detectar promoções
+  has_promotion?: boolean;
 }
 
 interface CategoryCardProps {
@@ -23,9 +23,8 @@ export function CategoryCard({ category }: CategoryCardProps) {
   return (
     <button
       onClick={() => store?.slug && router.push(`/${store.slug}/categoria/${category.slug}`)}
-      className="relative aspect-square w-full rounded-xl overflow-hidden shadow-lg transition-transform active:scale-95 group"
+      className="relative aspect-square w-full rounded-xl overflow-hidden shadow-lg transition-transform active:scale-95 group cursor-pointer border border-border bg-card"
     >
-      {/* Selinho de Oferta (Canto Superior Direito) */}
       {category.has_promotion && (
         <div className="absolute top-2 right-2 z-10 bg-red-600 text-white px-2 py-1 rounded-lg flex items-center gap-1 shadow-md animate-pulse">
           <Tag className="w-2.5 h-2.5 fill-white" />
@@ -33,16 +32,15 @@ export function CategoryCard({ category }: CategoryCardProps) {
         </div>
       )}
 
-      {/* Imagem de Fundo vinda do Supabase */}
       <img
         src={category.icon || "/placeholder.svg"}
         alt={category.name}
         className="w-full h-full object-cover transition-transform group-hover:scale-110"
       />
 
-      {/* Tarja Preta com Nome (Padrão Expresso Bebidas) */}
-      <div className="absolute bottom-0 left-0 right-0 bg-black/90 py-3 px-2">
-        <span className="text-white text-[10px] font-black uppercase tracking-widest block text-center">
+      {/* Rodapé com inversão de cores: definida pela classe category-card-footer no globals.css */}
+      <div className="absolute bottom-0 left-0 right-0 category-card-footer py-3 px-2 transition-all duration-300">
+        <span className="text-[10px] font-black uppercase tracking-widest block text-center">
           {category.name}
         </span>
       </div>

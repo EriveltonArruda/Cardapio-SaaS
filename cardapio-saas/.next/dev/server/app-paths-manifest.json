@@ -1,10 +1,7 @@
 {
-  "/[slug]/admin/dashboard/page": "app/[slug]/admin/dashboard/page.js",
   "/[slug]/admin/login/page": "app/[slug]/admin/login/page.js",
   "/[slug]/admin/page": "app/[slug]/admin/page.js",
+  "/[slug]/cart/page": "app/[slug]/cart/page.js",
   "/[slug]/categoria/[categorySlug]/page": "app/[slug]/categoria/[categorySlug]/page.js",
-  "/[slug]/page": "app/[slug]/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/page": "app/page.js",
-  "/register/page": "app/register/page.js"
+  "/[slug]/page": "app/[slug]/page.js"
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, User, Store } from "lucide-react";
+import { Home, ShoppingBag } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/contexts/StoreContext";
 
@@ -21,27 +21,16 @@ export function BottomNav() {
       <nav className="flex items-center justify-around h-16">
         <Link
           href={homePath}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive(homePath) ? "text-primary" : "text-muted-foreground hover:text-primary"
+          className={`flex flex-col items-center justify-center w-full h-full space-y-1 cursor-pointer transition-colors ${isActive(homePath) ? "text-primary" : "text-muted-foreground hover:text-primary"
             }`}
         >
           <Home className="w-6 h-6" />
           <span className="text-[10px] font-medium">Início</span>
         </Link>
 
-        {/* Link para o Admin (Opcional, se quiser deixar fácil o acesso) */}
-        {/* <Link
-          href={store?.slug ? `/${store.slug}/admin` : "/admin"}
-          className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-            isActive(store?.slug ? `/${store.slug}/admin` : "/admin") ? "text-primary" : "text-muted-foreground hover:text-primary"
-          }`}
-        >
-          <Store className="w-6 h-6" />
-          <span className="text-[10px] font-medium">Loja</span>
-        </Link> */}
-
         <Link
           href={cartPath}
-          className={`relative flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive(cartPath) ? "text-primary" : "text-muted-foreground hover:text-primary"
+          className={`relative flex flex-col items-center justify-center w-full h-full space-y-1 cursor-pointer transition-colors ${isActive(cartPath) ? "text-primary" : "text-muted-foreground hover:text-primary"
             }`}
         >
           <div className="relative">

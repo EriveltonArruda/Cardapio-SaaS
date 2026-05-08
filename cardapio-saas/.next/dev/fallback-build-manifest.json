@@ -1,37 +1,12 @@
 {
   "pages": {
-    "/_app": [
-      "static/chunks/0brf_next_dist_compiled_05gbhxm._.js",
-      "static/chunks/0brf_next_dist_shared_lib_0__tqy2._.js",
-      "static/chunks/0brf_next_dist_client_0o_txx3._.js",
-      "static/chunks/0brf_next_dist_04a-ji3._.js",
-      "static/chunks/0brf_next_app_0~s47rv.js",
-      "static/chunks/[next]_entry_page-loader_ts_07ipk-d._.js",
-      "static/chunks/0brf_react-dom_07.gt9a._.js",
-      "static/chunks/0brf_0z1bco4._.js",
-      "static/chunks/[root-of-the-server]__08k_hhf._.js",
-      "static/chunks/Documents_Projetos_Cardapio-SaaS_cardapio-saas_pages__app_07xvfw~._.js",
-      "static/chunks/turbopack-Documents_Projetos_Cardapio-SaaS_cardapio-saas_pages__app_0_abh08._.js"
-    ],
-    "/_error": [
-      "static/chunks/0brf_next_dist_compiled_05gbhxm._.js",
-      "static/chunks/0brf_next_dist_shared_lib_0lw316h._.js",
-      "static/chunks/0brf_next_dist_client_0o_txx3._.js",
-      "static/chunks/0brf_next_dist_0cbyhi3._.js",
-      "static/chunks/[next]_entry_page-loader_ts_00mc-~p._.js",
-      "static/chunks/0brf_react-dom_07.gt9a._.js",
-      "static/chunks/0brf_0z1bco4._.js",
-      "static/chunks/[root-of-the-server]__0rs~23k._.js",
-      "static/chunks/Documents_Projetos_Cardapio-SaaS_cardapio-saas_pages__error_07xvfw~._.js",
-      "static/chunks/turbopack-Documents_Projetos_Cardapio-SaaS_cardapio-saas_pages__error_04om0.4._.js"
-    ]
+    "/_app": []
   },
   "devFiles": [],
   "polyfillFiles": [],
   "lowPriorityFiles": [
-    "static/development/_buildManifest.js",
     "static/development/_ssgManifest.js",
-    "static/development/_clientMiddlewareManifest.js"
+    "static/development/_buildManifest.js"
   ],
   "rootMainFiles": []
 }

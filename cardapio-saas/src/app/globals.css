@@ -5,20 +5,32 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-background: var(--background);
+  --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-accent: var(--accent);
-  --color-border: var(--border); /* Garante que a utilidade border-border exista */
+  --color-border: var(--border);
+
+  /* Variáveis para a inversão do card de categoria */
+  --color-cat-footer-bg: var(--cat-footer-bg);
+  --color-cat-footer-fg: var(--cat-footer-fg);
 }
 
 :root {
+  /* MODO CLARO */
   --background: #fcfcfc;
+  --foreground: #111111; /* H2 e textos gerais ficam pretos aqui */
   --card: #ffffff;
-  
-  /* Cores Dinâmicas */
-  --primary: #FFB800;
+  --border: #e2e8f0;
+  --secondary: #f1f5f9;
+
+  /* Cores de Destaque (Lojista) */
+  --primary: #ffb800;
   --primary-foreground: #111111;
-  --secondary: #F1F5F9;
-  
+
+  /* Inversão do Card de Categoria (Light: Fundo Preto / Texto Branco) */
+  --cat-footer-bg: #111111;
+  --cat-footer-fg: #ffffff;
+
   --header-bg: var(--primary);
   --header-foreground: var(--primary-foreground);
   --category-card-bg: var(--primary);
@@ -26,23 +38,39 @@
   --ring: var(--primary);
   --accent: var(--primary);
 
-  --border: #E2E8F0;
-  --foreground: #111111;
-  
-  --badge-cold: #0088CC;
-  --badge-alcoholic: #9D4EDD;
-  --badge-container: #F97316;
+  /* Badges */
+  --badge-cold: #0088cc;
+  --badge-alcoholic: #9d4edd;
+  --badge-container: #f97316;
+}
+
+.dark {
+  /* MODO ESCURO */
+  --background: #000000;
+  --foreground: #ffffff; /* H2 e textos gerais ficam brancos aqui */
+  --card: #121212;
+  --border: #262626;
+  --secondary: #1f2937;
+
+  /* Inversão do Card de Categoria (Dark: Fundo Branco / Texto Preto) */
+  --cat-footer-bg: #ffffff;
+  --cat-footer-fg: #111111;
+
+  /* Mantemos o header-bg vindo do primary para respeitar o lojista */
+  --header-bg: var(--primary);
+  --header-foreground: var(--primary-foreground);
+
+  --category-card-bg: #121212;
 }
 
 @layer base {
   * {
-    /* Substituímos o @apply problemático por uma variável direta */
     border-color: var(--border);
   }
   body {
     background-color: var(--background);
     color: var(--foreground);
-    @apply antialiased;
+    @apply antialiased transition-colors duration-300;
   }
 }
 
@@ -51,17 +79,24 @@
     background: var(--header-bg);
     color: var(--header-foreground);
   }
-  
+
   .category-card {
-    @apply relative overflow-hidden rounded-lg transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98];
+    @apply relative overflow-hidden rounded-lg transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98] border;
     background: var(--category-card-bg);
+    border-color: var(--border);
+  }
+
+  /* Classe utilitária para o rodapé do card de categoria */
+  .category-card-footer {
+    background-color: var(--cat-footer-bg);
+    color: var(--cat-footer-fg);
   }
 
   .price-tag {
     @apply font-black;
     color: var(--price-color);
   }
-  
+
   .cart-item-row {
     @apply flex items-center gap-3 py-4 border-b last:border-b-0;
   }
@@ -69,12 +104,15 @@
   .product-badge {
     @apply inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full;
   }
+
   .product-badge-cold {
     @apply text-[var(--badge-cold)] bg-[var(--badge-cold)]/10;
   }
+
   .product-badge-alcoholic {
     @apply text-[var(--badge-alcoholic)] bg-[var(--badge-alcoholic)]/10;
   }
+
   .product-badge-container {
     @apply text-[var(--badge-container)] bg-[var(--badge-container)]/10;
   }

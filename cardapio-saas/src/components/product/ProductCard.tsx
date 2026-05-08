@@ -2,6 +2,7 @@
 
 import { formatPrice } from "@/lib/utils";
 import { Snowflake, Wine, Package, Image as ImageIcon, Tag } from "lucide-react";
+import { useStore } from "@/contexts/StoreContext"; // ✅ Importado
 
 interface ProductCardProps {
   product: any;
@@ -9,51 +10,51 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onClick }: ProductCardProps) {
+  const { store } = useStore(); // ✅ Pegando os dados da loja
+
   const price = Number(product.price);
   const originalPrice = product.original_price ? Number(product.original_price) : 0;
-  const isOnSale = originalPrice > price;
 
-  // Lógica de disponibilidade
+  // 🛡️ BLINDAGEM: Só é "Oferta" se houver preço original E se o plano for PRO
+  const isOnSale = originalPrice > price && store?.plan_type === 'pro';
+
   const isAvailable = product.is_available !== false;
 
   return (
     <button
       onClick={isAvailable ? onClick : undefined}
       className={`cart-item-row w-full text-left transition-all px-4 -mx-4 flex items-center gap-4 py-4 border-b border-border/50 relative 
-        ${!isAvailable ? 'opacity-50 grayscale cursor-not-allowed' : 'hover:bg-muted/50'}`}
+        ${!isAvailable
+          ? 'opacity-50 grayscale cursor-not-allowed'
+          : 'hover:bg-muted/50 cursor-pointer active:scale-[0.99]'}`}
     >
       <div className="flex-1 min-w-0">
         <h3 className="font-medium text-foreground leading-snug line-clamp-2">
           {product.name}
         </h3>
 
-        <div className="flex items-center gap-2 mt-1">
-          {/* Badge de Esgotado ou Oferta */}
+        <div className="flex flex-wrap items-center gap-1.5 mt-1">
           {!isAvailable ? (
             <span className="bg-slate-700 text-white text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1">
               ESGOTADO
             </span>
-          ) : isOnSale && (
+          ) : isOnSale && ( // ✅ Aqui a trava já age: se não for PRO, isOnSale é false
             <span className="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 animate-pulse">
               <Tag className="w-2.5 h-2.5" /> OFERTA
             </span>
           )}
 
-          {product.is_cold && (
-            <span className="product-badge product-badge-cold">
-              <Snowflake className="w-3.5 h-3.5" />
-            </span>
-          )}
-          {product.is_alcoholic && (
-            <span className="product-badge product-badge-alcoholic">
-              <Wine className="w-3.5 h-3.5" />
-            </span>
-          )}
-          {product.has_container && (
-            <span className="product-badge product-badge-container">
-              <Package className="w-3.5 h-3.5" />
-            </span>
-          )}
+          {/* Tags de comida (Destaques, Veggie, etc) seguem o fluxo normal */}
+          {product.is_featured && <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-amber-200">🏆</span>}
+          {product.is_artisanal && <span className="bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-red-200">🥩</span>}
+          {product.is_new && <span className="bg-orange-100 text-orange-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-orange-200">🔥</span>}
+          {product.is_veggie && <span className="bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-green-200">🌱</span>}
+          {product.is_wood_fire && <span className="bg-slate-100 text-slate-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-slate-200">🔥🪵</span>}
+
+          {/* Badges de bebidas */}
+          {product.is_cold && <span className="product-badge product-badge-cold"><Snowflake className="w-3.5 h-3.5" /></span>}
+          {product.is_alcoholic && <span className="product-badge product-badge-alcoholic"><Wine className="w-3.5 h-3.5" /></span>}
+          {product.has_container && <span className="product-badge product-badge-container"><Package className="w-3.5 h-3.5" /></span>}
         </div>
 
         {product.description && (
@@ -66,6 +67,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
           <p className="price-tag text-base font-bold text-primary">
             {formatPrice(product.price)}
           </p>
+          {/* ✅ BLINDAGEM: O preço original riscado some para Starter */}
           {isOnSale && (
             <span className="text-[10px] text-muted-foreground line-through decoration-destructive/50">
               {formatPrice(product.original_price)}
@@ -74,7 +76,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
         </div>
       </div>
 
-      <div className="w-20 h-20 rounded-xl bg-white flex-shrink-0 overflow-hidden border border-border/50 flex items-center justify-center p-1 relative">
+      <div className="w-20 h-20 rounded-xl bg-white shrink-0 overflow-hidden border border-border/50 flex items-center justify-center p-1 relative">
         {product.image_url ? (
           <img
             src={product.image_url}
@@ -82,7 +84,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             className="w-full h-full object-contain"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-4xl bg-gradient-to-br from-amber-50 to-orange-50">
+          <div className="w-full h-full flex items-center justify-center text-4xl bg-linear-to-br from-amber-50 to-orange-50">
             <ImageIcon className="w-8 h-8 text-primary opacity-20" />
           </div>
         )}

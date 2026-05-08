@@ -49,7 +49,7 @@ export const BannerCarousel = ({ promotions }: BannerCarouselProps) => {
           {promotions.map((promo) => (
             <CarouselItem key={promo.id}>
               <Card
-                onClick={() => router.push(`/${store.slug}/promocao/${promo.id}`)}
+                onClick={() => router.push(`/${store.slug}/promotion/${promo.id}`)}
                 className="overflow-hidden border-none cursor-pointer hover:brightness-95 transition-all active:scale-[0.98] relative h-44"
               >
                 <CardContent className="p-0 h-full">
@@ -63,7 +63,7 @@ export const BannerCarousel = ({ promotions }: BannerCarouselProps) => {
                   )}
 
                   {/* Overlay para o Texto não sumir na imagem */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent p-6 flex flex-col justify-center">
+                  <div className="absolute inset-0 bg-linear-to-r from-black/70 via-black/30 to-transparent p-6 flex flex-col justify-center">
                     <h3 className="text-xl font-black text-white uppercase tracking-tighter leading-none mb-2">
                       {promo.title}
                     </h3>
