@@ -6,10 +6,11 @@ import { formatPrice } from "@/lib/utils";
 import { Plus } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
+import { CartSuggestion, Product } from "@/types"; // ✅ Tipos Globais
 
 export function SuggestionsSection() {
   const { items, addToCart } = useCart();
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<CartSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { store } = useStore();
 
@@ -19,16 +20,15 @@ export function SuggestionsSection() {
       try {
         if (!store?.id) return;
 
-        const response = await supabase
-          .from('cart_suggestions' as any)
-          .select('*,products(id,name,price,image_url,category_id)')
+        // ✅ Trazemos products(*) para garantir que o objeto satisfaça a interface Product no CartContext
+        const response = await (supabase.from('cart_suggestions' as any) as any)
+          .select('*, products(*)')
           .eq('store_id', store.id)
           .eq('is_active', true);
 
         if (response.data && isMounted) {
           const data = response.data;
-          setSuggestions(data || []);
-          console.log("📦 Sugestões Brutas do Banco:", data);
+          setSuggestions((data as unknown as CartSuggestion[]) || []);
         }
       } catch (err) {
         console.error("Erro ao buscar sugestões:", err);
@@ -40,11 +40,13 @@ export function SuggestionsSection() {
     return () => { isMounted = false; };
   }, [store?.id]);
 
-  const cartCategoryIds = items.map(item => item.product.categoryId || (item.product as any).category_id);
+  // ✅ Busca as categorias usando a propriedade correta (category_id) tipada
+  const cartCategoryIds = items.map(item => item.product.category_id);
   const cartProductIds = items.map(item => item.product.id);
 
   const relevantSuggestions = suggestions.filter(suggestion => {
-    const product = suggestion.products;
+    // Usamos um cast temporário para tratar o join do banco como Product
+    const product = suggestion.products as unknown as Product;
     if (!product) return false;
 
     if (cartProductIds.includes(product.id)) return false;
@@ -53,14 +55,11 @@ export function SuggestionsSection() {
     return suggestion.category_ids.some((catId: string) => cartCategoryIds.includes(catId));
   });
 
-  const handleAdd = (suggestion: any) => {
-    const productToCart = {
-      id: suggestion.products.id,
-      name: suggestion.products.name,
-      price: suggestion.products.price,
-      image_url: suggestion.products.image_url,
-      categoryId: suggestion.products.category_id
-    };
+  const handleAdd = (suggestion: CartSuggestion) => {
+    // O banco retorna as informações completas do produto graças ao select('*, products(*)')
+    const productToCart = suggestion.products as unknown as Product;
+
+    // Adiciona o produto sugerido (quantidade 1, sem adicionais, sem observações)
     addToCart(productToCart, 1, [], "");
   };
 
@@ -72,36 +71,40 @@ export function SuggestionsSection() {
         <span className="text-sm">💡</span> Aproveite e leve também
       </h3>
       <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-        {relevantSuggestions.map((suggestion) => (
-          <div
-            key={suggestion.id}
-            className="min-w-37.5 max-w-37.5 bg-card border border-border rounded-2xl p-3 shadow-sm flex flex-col justify-between transition-colors"
-          >
-            <div className="h-20 w-full bg-muted/50 rounded-xl flex items-center justify-center overflow-hidden mb-2">
-              {suggestion.products.image_url ? (
-                <img
-                  src={suggestion.products.image_url}
-                  className="w-full h-full object-contain p-2"
-                  alt={suggestion.products.name}
-                />
-              ) : <span className="text-2xl opacity-20">📦</span>}
-            </div>
-            <div className="space-y-0.5 mb-3 text-left">
-              <p className="text-[10px] font-bold text-foreground line-clamp-2 leading-tight min-h-8">
-                {suggestion.products.name}
-              </p>
-              <p className="text-xs font-black text-primary">
-                {formatPrice(suggestion.products.price)}
-              </p>
-            </div>
-            <button
-              onClick={() => handleAdd(suggestion)}
-              className="w-full py-2 bg-foreground text-background text-[9px] font-bold rounded-lg shadow-md active:scale-95 transition-all flex items-center justify-center gap-1 uppercase"
+        {relevantSuggestions.map((suggestion) => {
+          const product = suggestion.products as unknown as Product;
+
+          return (
+            <div
+              key={suggestion.id}
+              className="min-w-[150px] max-w-[150px] bg-card border border-border rounded-2xl p-3 shadow-sm flex flex-col justify-between transition-colors"
             >
-              <Plus className="w-3 h-3" /> Adicionar
-            </button>
-          </div>
-        ))}
+              <div className="h-20 w-full bg-muted/50 rounded-xl flex items-center justify-center overflow-hidden mb-2">
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    className="w-full h-full object-contain p-2"
+                    alt={product.name}
+                  />
+                ) : <span className="text-2xl opacity-20">📦</span>}
+              </div>
+              <div className="space-y-0.5 mb-3 text-left">
+                <p className="text-[10px] font-bold text-foreground line-clamp-2 leading-tight min-h-[32px]">
+                  {product.name}
+                </p>
+                <p className="text-xs font-black text-primary">
+                  {formatPrice(product.price)}
+                </p>
+              </div>
+              <button
+                onClick={() => handleAdd(suggestion)}
+                className="w-full py-2 bg-foreground text-background text-[9px] font-bold rounded-lg shadow-md active:scale-95 transition-all flex items-center justify-center gap-1 uppercase hover:opacity-90 cursor-pointer"
+              >
+                <Plus className="w-3 h-3" /> Adicionar
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

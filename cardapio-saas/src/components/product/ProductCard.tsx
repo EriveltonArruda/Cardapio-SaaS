@@ -2,15 +2,21 @@
 
 import { formatPrice } from "@/lib/utils";
 import { Snowflake, Wine, Package, Image as ImageIcon, Tag } from "lucide-react";
-import { useStore } from "@/contexts/StoreContext"; // ✅ Importado
+import { useStore } from "@/contexts/StoreContext";
+import { Product } from "@/types"; // ✅ Importando do index.ts
+
+// ✅ Intersecção: Informamos ao TS que este produto PODE ter um preço original
+interface ProductWithPromo extends Product {
+  original_price?: number | null;
+}
 
 interface ProductCardProps {
-  product: any;
+  product: ProductWithPromo; // ✅ Tipagem aplicada
   onClick: () => void;
 }
 
 export function ProductCard({ product, onClick }: ProductCardProps) {
-  const { store } = useStore(); // ✅ Pegando os dados da loja
+  const { store } = useStore();
 
   const price = Number(product.price);
   const originalPrice = product.original_price ? Number(product.original_price) : 0;
@@ -38,13 +44,13 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             <span className="bg-slate-700 text-white text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1">
               ESGOTADO
             </span>
-          ) : isOnSale && ( // ✅ Aqui a trava já age: se não for PRO, isOnSale é false
+          ) : isOnSale && (
             <span className="bg-red-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 animate-pulse">
               <Tag className="w-2.5 h-2.5" /> OFERTA
             </span>
           )}
 
-          {/* Tags de comida (Destaques, Veggie, etc) seguem o fluxo normal */}
+          {/* Tags de comida */}
           {product.is_featured && <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-amber-200">🏆</span>}
           {product.is_artisanal && <span className="bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-red-200">🥩</span>}
           {product.is_new && <span className="bg-orange-100 text-orange-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-orange-200">🔥</span>}
@@ -65,12 +71,11 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
 
         <div className="flex items-baseline gap-2 mt-1.5">
           <p className="price-tag text-base font-bold text-primary">
-            {formatPrice(product.price)}
+            {formatPrice(price)}
           </p>
-          {/* ✅ BLINDAGEM: O preço original riscado some para Starter */}
           {isOnSale && (
             <span className="text-[10px] text-muted-foreground line-through decoration-destructive/50">
-              {formatPrice(product.original_price)}
+              {formatPrice(originalPrice)}
             </span>
           )}
         </div>

@@ -4,16 +4,16 @@ import { useRouter } from "next/navigation";
 import { Tag } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  icon?: string | null;
+// ✅ Importação da Interface Global
+import { Category } from "@/types";
+
+// ✅ Intersecção: Informa que o componente espera o campo dinâmico de promoção
+interface CategoryWithPromo extends Category {
   has_promotion?: boolean;
 }
 
 interface CategoryCardProps {
-  category: Category;
+  category: CategoryWithPromo;
 }
 
 export function CategoryCard({ category }: CategoryCardProps) {
@@ -22,7 +22,8 @@ export function CategoryCard({ category }: CategoryCardProps) {
 
   return (
     <button
-      onClick={() => store?.slug && router.push(`/${store.slug}/categoria/${category.slug}`)}
+      // ✅ Fallback seguro: se não tiver slug, ele não quebra a rota
+      onClick={() => store?.slug && router.push(`/${store.slug}/categoria/${category.slug || category.id}`)}
       className="relative aspect-square w-full rounded-xl overflow-hidden shadow-lg transition-transform active:scale-95 group cursor-pointer border border-border bg-card"
     >
       {category.has_promotion && (

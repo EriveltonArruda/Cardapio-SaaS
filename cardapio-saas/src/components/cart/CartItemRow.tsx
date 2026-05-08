@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from "react"; // ✅ Movido para o topo
 import { Trash2, Minus, Plus } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCart, CartItem } from "@/contexts/CartContext";
@@ -9,22 +10,23 @@ interface CartItemRowProps {
 }
 
 export function CartItemRow({ item }: CartItemRowProps) {
-  const { updateQuantity, removeItem } = useCart();
+  const { updateQuantity, removeFromCart } = useCart(); // ✅ Ajuste: no contexto tipado é removeFromCart
 
   const product = item.product;
-  const imageSource = product.image_url || (product.image !== "/placeholder.svg" ? product.image : null);
+  // Fallback seguro caso 'image' venha de retrocompatibilidade
+  const imageSource = product.image_url || ((product as any).image !== "/placeholder.svg" ? (product as any).image : null);
 
-  // ✅ CORREÇÃO NA LÓGICA DE SOMA:
-  // (Preço do Produto + Soma dos preços de cada Adicional) * Quantidade total de itens
+  // ✅ CORREÇÃO NA LÓGICA DE SOMA (E considerando preço promocional se houver)
   const itemTotal = useMemo(() => {
-    const basePrice = product.price || 0;
+    // Usa promo_price se existir, senão usa o price normal
+    const basePrice = product.promo_price || product.price || 0;
+
     const addonsSum = item.selectedAddons?.reduce((sum, a) => {
-      // Usamos acc.addon.price pois é a estrutura que definimos no CartContext
       return sum + (a.addon?.price || 0);
     }, 0) || 0;
 
     return (basePrice + addonsSum) * item.quantity;
-  }, [item]);
+  }, [item, product.promo_price, product.price]);
 
   return (
     <div className="cart-item-row flex items-center gap-4 p-4 border-b border-border/50 last:border-0 animate-in fade-in duration-300">
@@ -48,7 +50,7 @@ export function CartItemRow({ item }: CartItemRowProps) {
           {item.product.name}
         </h3>
 
-        {/* Lista os adicionais (PLANO PREMIUM) */}
+        {/* Lista os adicionais */}
         {item.selectedAddons && item.selectedAddons.length > 0 && (
           <div className="mt-1 flex flex-wrap gap-1">
             {item.selectedAddons.map((addon, idx) => (
@@ -73,7 +75,8 @@ export function CartItemRow({ item }: CartItemRowProps) {
       {/* Botões de Ação */}
       <div className="flex flex-col items-end gap-2">
         <button
-          onClick={() => removeItem(item.product.id)}
+          // ✅ CORREÇÃO CRÍTICA: Usa cartItemId para remover exatamente a linha certa
+          onClick={() => removeFromCart(item.cartItemId)}
           className="p-2 text-muted-foreground hover:text-red-500 transition-colors active:scale-90 cursor-pointer"
         >
           <Trash2 className="w-4 h-4" />
@@ -81,7 +84,8 @@ export function CartItemRow({ item }: CartItemRowProps) {
 
         <div className="flex items-center border border-border rounded-xl bg-muted/20 p-1">
           <button
-            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+            // ✅ CORREÇÃO CRÍTICA: Usa cartItemId para alterar a quantidade certa
+            onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
             disabled={item.quantity <= 1}
             className="w-7 h-7 flex items-center justify-center hover:bg-background transition-colors rounded-lg disabled:opacity-30 cursor-pointer text-foreground"
           >
@@ -91,7 +95,8 @@ export function CartItemRow({ item }: CartItemRowProps) {
           <span className="w-7 text-center text-xs font-black text-foreground">{item.quantity}</span>
 
           <button
-            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+            // ✅ CORREÇÃO CRÍTICA: Usa cartItemId
+            onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
             className="w-7 h-7 flex items-center justify-center hover:bg-background transition-colors rounded-lg cursor-pointer text-foreground"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -101,6 +106,3 @@ export function CartItemRow({ item }: CartItemRowProps) {
     </div>
   );
 }
-
-// Não esqueça de importar o useMemo no topo do arquivo se ele não estiver lá
-import { useMemo } from "react";

@@ -12,26 +12,16 @@ import { Loader2 } from "lucide-react";
 import { supabase } from '@/lib/supabase/client';
 import { useStore } from "@/contexts/StoreContext";
 
-// Interfaces mantidas conforme seu original
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  icon: string | null;
-  sort_order: number | null;
-  is_active: boolean | null;
+// ✅ Importando as interfaces globais
+import { Category, Promotion } from "@/types";
+
+// ✅ Estendendo a categoria apenas para o front-end saber que pode existir a tag de oferta
+interface CategoryWithPromo extends Category {
   has_promotion?: boolean;
 }
 
-interface Promotion {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-}
-
 export default function Home() {
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryWithPromo[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -41,14 +31,8 @@ export default function Home() {
 
   // 🛡️ TRAVA DE SEGURANÇA REFORÇADA: Evita o "bate e volta" indevido
   useEffect(() => {
-    // Só tentamos validar o redirecionamento se o contexto NÃO estiver carregando
-    // e se a loja for nula, mas houver um slug na URL.
     if (!isStoreLoading && !store && params?.slug) {
-
-      // Adicionamos um pequeno delay de 500ms. 
-      // Isso garante que não é apenas um "atraso" de transição do Next.js.
       const timer = setTimeout(() => {
-        // Se após o delay a loja continua nula, aí sim redirecionamos.
         console.warn("⚠️ Loja não encontrada após tempo de espera. Redirecionando...");
         router.replace('/');
       }, 500);
@@ -78,15 +62,17 @@ export default function Home() {
       ]);
 
       if (catRes.data) {
-        const categoriesWithPromo = (catRes.data || []).map((cat: any) => ({
-          ...cat,
+        // ✅ Mantivemos um 'any' temporário no .map() porque a relação 'products(promotion_id)' não existe no tipo base
+        const categoriesWithPromo = (catRes.data as any[]).map((cat) => ({
+          ...(cat as Category),
           has_promotion: cat.products?.some((p: any) => p.promotion_id !== null)
         }));
         setCategories(categoriesWithPromo);
       }
 
       if (promoRes.data) {
-        setPromotions(promoRes.data || []);
+        // ✅ Cast duplo para garantir que o array de promoções seja validado
+        setPromotions((promoRes.data as unknown as Promotion[]) || []);
       }
     } catch (err) {
       console.error("Erro na conexão com o Supabase:", err);
@@ -96,7 +82,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Só dispara o fetch se tivermos o ID e o contexto NÃO estiver em loading
     if (store?.id && !isStoreLoading) {
       loadHomeData(store.id);
     }

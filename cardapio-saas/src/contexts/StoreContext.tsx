@@ -3,8 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { useAuth } from '@/contexts/AuthContext'; // ✅ Conectado ao seu AuthContext
-import { Store } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { Store, StoreSettings } from '@/types'; // ✅ Incluída a interface de Settings
 
 interface StoreContextType {
   store: Store | null;
@@ -16,7 +16,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const params = useParams();
-  const { user, isLoading: authLoading } = useAuth(); // ✅ Pega o usuário e o loading do Auth
+  const { user, isLoading: authLoading } = useAuth();
   const [store, setStore] = useState<Store | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,8 +56,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('stores')
+        // ✅ Cast do supabase para resolver o erro de "Invalid Relationships" do TS
+        const { data, error } = await (supabase.from('stores') as any)
           .select(`*, store_settings (*)`)
           .eq('slug', slug)
           .maybeSingle();
@@ -72,9 +72,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const storeRaw = data as any;
+        const storeRaw = data;
         const settingsData = storeRaw.store_settings;
-        const activeSettings = Array.isArray(settingsData) ? settingsData[0] : settingsData || {};
+
+        // ✅ Tipando as configurações de forma segura
+        const activeSettings: Partial<StoreSettings> = Array.isArray(settingsData)
+          ? (settingsData[0] || {})
+          : (settingsData || {});
 
         const mergedStore: Store = {
           id: storeRaw.id,
@@ -119,7 +123,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     loadStoreData();
     return () => { isMounted = false; };
-  }, [slug]);
+  }, [slug, store]);
 
   // ✅ 3. O loading final só é falso quando AMBOS terminarem (Auth e Store)
   const combinedLoading = isLoading || authLoading;

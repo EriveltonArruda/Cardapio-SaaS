@@ -14,11 +14,11 @@ export interface Store {
   logo_url: string | null;
   is_open: boolean;
   is_active: boolean;
-  address?: string;
-  whatsapp_number?: string;
-  opening_hours_week?: string;
-  opening_hours_weekend?: string;
-  opening_hours_sunday?: string;
+  address?: string | null;             // ✅ Adicionado | null
+  whatsapp_number?: string | null;     // ✅ Adicionado | null
+  opening_hours_week?: string | null;    // ✅ Adicionado | null
+  opening_hours_weekend?: string | null; // ✅ Adicionado | null
+  opening_hours_sunday?: string | null;  // ✅ Adicionado | null
   accept_pix: boolean;
   accept_card_credit: boolean;
   accept_card_debt: boolean;

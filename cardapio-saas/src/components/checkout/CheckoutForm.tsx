@@ -3,17 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
-import { Info, Loader2, MapPin, User, Phone as PhoneIcon, Search, Wallet, CreditCard, Banknote, QrCode } from "lucide-react";
+import { Loader2, MapPin, User, Phone as PhoneIcon, Wallet, CreditCard, Banknote, QrCode } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
+import { formatPrice } from "@/lib/utils";
 
-const formatPrice = (value: number) => {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
-};
+// ✅ Importações Globais
+import { Order } from "@/types";
 
 export function CheckoutForm() {
   const { items, getTotal, clearCart } = useCart();
@@ -29,7 +26,7 @@ export function CheckoutForm() {
     number: "",
     neighborhood: "",
     landmark: "",
-    paymentMethod: "", // Novo campo
+    paymentMethod: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -68,8 +65,8 @@ export function CheckoutForm() {
     try {
       const total = getTotal();
 
-      // 1. SALVAR NO BANCO DE DADOS
-      const orderPayload = {
+      // 1. SALVAR NO BANCO DE DADOS (Conforme interface Order)
+      const orderPayload: Partial<Order> = {
         store_id: store.id,
         customer_name: formData.name,
         customer_phone: formData.phone,
@@ -78,51 +75,53 @@ export function CheckoutForm() {
         address_neighborhood: formData.neighborhood,
         address_landmark: formData.landmark,
         payment_method: formData.paymentMethod,
-        // 🛡️ Transformamos o array em String para o banco aceitar sem reclamar
         items: JSON.stringify(items.map(item => ({
           name: item.product.name,
           quantity: item.quantity,
-          price: item.product.price,
+          price: item.product.promo_price || item.product.price, // ✅ Usa preço promocional se houver
           observations: item.observations || "",
           addons: item.selectedAddons?.map(a => ({
-            name: a.addon?.name || "Adicional",
-            price: a.addon?.price || 0
+            name: a.addon.name,
+            price: a.addon.price
           })) || []
         }))),
         total_amount: total,
         status: 'pendente'
       };
 
-      const saveRes = await supabase.from('orders').insert(orderPayload).select();
-      if (saveRes.error) throw new Error("Erro ao salvar pedido");
+      const { data: savedOrder, error: saveError } = await supabase
+        .from('orders')
+        .insert([orderPayload as any])
+        .select()
+        .single();
 
-      const savedData = saveRes.data;
-      const orderId = savedData[0]?.id?.split('-')[0].toUpperCase() || "NEW";
+      if (saveError) throw new Error("Erro ao salvar pedido");
+
+      const orderId = savedOrder?.id?.split('-')[0].toUpperCase() || "NEW";
 
       // 2. BUSCAR DADOS DA LOJA PARA WHATSAPP
-      const settingsRes = await supabase
+      const { data: settings } = await supabase
         .from('store_settings')
         .select('phone, store_name')
         .eq('store_id', store.id)
-        .single();
+        .maybeSingle();
 
-      const rawPhone = settingsRes.data?.phone?.replace(/\D/g, '') || "81979158040";
+      const rawPhone = settings?.phone?.replace(/\D/g, '') || "81979158040";
       const storePhone = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`;
-      const storeName = settingsRes.data?.store_name || store.name || "Loja";
+      const storeName = settings?.store_name || store.name || "Loja";
 
-      // 3. MONTAGEM DA MENSAGEM (FORMATO COMPLETO PARA ENTREGA)
+      // 3. MONTAGEM DA MENSAGEM WHATSAPP
       let message = `*NOVO PEDIDO #${orderId}*\n`;
       message += `*${storeName.toUpperCase()}*\n`;
       message += `------------------------------------------\n\n`;
 
       items.forEach((item) => {
-        // Cálculo do subtotal do item (Preço base + Adicionais)
-        const addonsSum = item.selectedAddons?.reduce((s, a) => s + (a.addon?.price || 0), 0) || 0;
-        const itemSubtotal = (item.product.price + addonsSum) * item.quantity;
+        const itemPrice = item.product.promo_price || item.product.price;
+        const addonsSum = item.selectedAddons?.reduce((s, a) => s + a.addon.price, 0) || 0;
+        const itemSubtotal = (itemPrice + addonsSum) * item.quantity;
 
         message += `*${item.quantity}x ${item.product.name}*\n`;
 
-        // Listar Adicionais se houver
         if (item.selectedAddons && item.selectedAddons.length > 0) {
           item.selectedAddons.forEach(a => {
             message += `  + ${a.addon.name} (${formatPrice(a.addon.price)})\n`;
@@ -140,24 +139,23 @@ export function CheckoutForm() {
 
       message += `*ENTREGA:*\n`;
       message += `*Cliente:* ${formData.name}\n`;
-      message += `*Contato:* ${formData.phone}\n`;
-      message += `*Endereço:* ${formData.street}, ${formData.number}\n`; // Rua e Número
-      message += `*Bairro:* ${formData.neighborhood}\n`;             // Bairro
-      message += `*Ref:* ${formData.landmark}\n\n`;                  // Ponto de Referência
+      message += `*Endereço:* ${formData.street}, ${formData.number}\n`;
+      message += `*Bairro:* ${formData.neighborhood}\n`;
+      message += `*Ref:* ${formData.landmark}\n\n`;
 
       message += `------------------------------------------\n`;
-      message += `_Pedido gerado pelo Cardápio Digital_`;
+      message += `_Pedido gerado pelo seu Cardápio Digital_`;
 
       const encodedMessage = encodeURIComponent(message);
-      const link = `https://api.whatsapp.com/send?phone=${storePhone}&text=${encodedMessage}`;
+      const whatsappLink = `https://api.whatsapp.com/send?phone=${storePhone}&text=${encodedMessage}`;
 
-      toast({ title: "Pedido enviado!" });
+      toast({ title: "Pedido enviado com sucesso!" });
       clearCart();
 
       setTimeout(() => {
-        window.open(link, '_blank');
+        window.open(whatsappLink, '_blank');
         router.push(`/${store.slug}`);
-      }, 800);
+      }, 500);
 
     } catch (error: any) {
       console.error(error);
@@ -181,7 +179,7 @@ export function CheckoutForm() {
       </div>
 
       <div className="space-y-4">
-        {/* Dados Pessoais */}
+        {/* Identificação */}
         <div className="grid grid-cols-1 gap-4">
           <div className="space-y-1.5">
             <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground ml-1">
@@ -211,7 +209,7 @@ export function CheckoutForm() {
           </div>
         </div>
 
-        {/* Endereço */}
+        {/* Localização */}
         <div className="grid grid-cols-3 gap-3">
           <div className="col-span-2 space-y-1.5">
             <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Rua</Label>
@@ -239,7 +237,7 @@ export function CheckoutForm() {
             type="text"
             value={formData.neighborhood}
             onChange={(e) => setFormData((prev) => ({ ...prev, neighborhood: e.target.value }))}
-            placeholder="Bairro"
+            placeholder="Ex: Centro"
             className="w-full p-4 border-2 border-transparent rounded-2xl bg-muted/30 font-bold focus:border-primary transition-all outline-none text-foreground mb-2"
           />
           <input
@@ -252,7 +250,7 @@ export function CheckoutForm() {
         </div>
       </div>
 
-      {/* SEÇÃO DE PAGAMENTO DINÂMICA */}
+      {/* Pagamento Dinâmico */}
       <div className="space-y-3 pt-4">
         <Label className="flex items-center gap-2 text-[10px] font-black uppercase text-muted-foreground ml-1">
           <Wallet className="w-3 h-3" /> Forma de Pagamento
@@ -317,7 +315,15 @@ export function CheckoutForm() {
   );
 }
 
-function PaymentButton({ active, onClick, icon, label }: any) {
+// ✅ Componentes auxiliares com tipagem
+interface PaymentButtonProps {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}
+
+function PaymentButton({ active, onClick, icon, label }: PaymentButtonProps) {
   return (
     <button
       type="button"

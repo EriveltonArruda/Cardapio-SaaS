@@ -1,23 +1,28 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { X, Minus, Plus, Snowflake, Wine, Package, ShoppingCart, Check, Loader2 } from "lucide-react";
+import { X, Minus, Plus, ShoppingCart, Check, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/contexts/StoreContext";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase/client";
 
+// ✅ Importações Globais
+import { Product, ProductAddon } from "@/types";
+
 interface ProductDetailModalProps {
-  product: any;
+  product: Product; // ✅ Tipagem rígida do produto
   onClose: () => void;
 }
 
 export function ProductDetailModal({ product, onClose }: ProductDetailModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [observations, setObservations] = useState("");
-  const [availableAddons, setAvailableAddons] = useState<any[]>([]);
-  const [selectedAddons, setSelectedAddons] = useState<any[]>([]);
+
+  // ✅ Estados tipados corretamente com a interface de Addons
+  const [availableAddons, setAvailableAddons] = useState<ProductAddon[]>([]);
+  const [selectedAddons, setSelectedAddons] = useState<ProductAddon[]>([]);
   const [isLoadingAddons, setIsLoadingAddons] = useState(false);
 
   const { addItem } = useCart();
@@ -38,7 +43,7 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
           .order('name');
 
         if (error) throw error;
-        setAvailableAddons(data || []);
+        setAvailableAddons((data as unknown as ProductAddon[]) || []);
       } catch (err) {
         console.error("Erro ao carregar complementos:", err);
       } finally {
@@ -52,10 +57,12 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
   // Cálculo do total dinâmico (Preço base + adicionais) * quantidade
   const calculateTotal = useMemo(() => {
     const addonsSum = selectedAddons.reduce((acc, curr) => acc + curr.price, 0);
-    return (product.price + addonsSum) * quantity;
-  }, [product.price, selectedAddons, quantity]);
+    // ✅ Pega o price ou promo_price se existir
+    const currentPrice = product.promo_price || product.price;
+    return (currentPrice + addonsSum) * quantity;
+  }, [product.price, product.promo_price, selectedAddons, quantity]);
 
-  const toggleAddon = (addon: any) => {
+  const toggleAddon = (addon: ProductAddon) => {
     setSelectedAddons(prev =>
       prev.find(a => a.id === addon.id)
         ? prev.filter(a => a.id !== addon.id)
@@ -78,6 +85,9 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
     product.is_new ||
     product.is_veggie ||
     product.is_wood_fire;
+
+  // Usa o promo_price como principal, caso contrário usa o price
+  const displayPrice = product.promo_price || product.price;
 
   return (
     <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -116,7 +126,14 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
           <div className="p-6">
             <div className="mb-6">
               <h2 className="text-2xl font-bold leading-tight text-foreground">{product.name}</h2>
-              <p className="text-2xl font-black text-primary mt-1">{formatPrice(product.price)}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-2xl font-black text-primary">{formatPrice(displayPrice)}</p>
+                {product.promo_price && (
+                  <p className="text-sm font-bold text-muted-foreground line-through">
+                    {formatPrice(product.price)}
+                  </p>
+                )}
+              </div>
 
               {/* Tags */}
               {hasAnyBadge && (
@@ -134,7 +151,7 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
               )}
             </div>
 
-            {/* SEÇÃO DE ADICIONAIS (PLANO PREMIUM) */}
+            {/* SEÇÃO DE ADICIONAIS */}
             {isLoadingAddons ? (
               <div className="flex items-center gap-2 py-4">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -176,7 +193,7 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
                         <span className="font-bold text-sm text-foreground">{addon.name}</span>
                       </div>
                       <span className="font-black text-xs text-primary">
-                        + {formatPrice(addon.price)}
+                        {addon.price > 0 ? `+ ${formatPrice(addon.price)}` : "Grátis"}
                       </span>
                     </label>
                   ))}
@@ -225,7 +242,7 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
           >
             <div className="flex items-center gap-3">
               <ShoppingCart className="w-5 h-5" />
-              <span className="uppercase tracking-tighter">Adicionar ao Carrinho</span>
+              <span className="uppercase tracking-tighter">Adicionar</span>
             </div>
             <span className="bg-black/10 px-4 py-1.5 rounded-xl text-sm font-black">
               {formatPrice(calculateTotal)}
