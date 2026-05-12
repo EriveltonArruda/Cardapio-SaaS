@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/contexts/StoreContext";
 import { Loader2, X, Ticket } from "lucide-react";
 
-export function CouponForm({ onClose }: { onClose: () => void }) {
+// ✅ Importe ou defina a interface do Cupom aqui para tipar a prop
+import { Coupon } from "@/types"; // Ajuste o caminho se necessário
+
+interface CouponFormProps {
+  onClose: () => void;
+  initialData?: Coupon | null; // ✅ Propriedade opcional para Edição
+}
+
+export function CouponForm({ onClose, initialData }: CouponFormProps) {
   const { store } = useStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +29,18 @@ export function CouponForm({ onClose }: { onClose: () => void }) {
     value: "",
     min_purchase: ""
   });
+
+  // ✅ Se veio um cupom para edição, preenche o formulário ao abrir
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        code: initialData.code,
+        type: initialData.type,
+        value: initialData.value.toString(),
+        min_purchase: initialData.min_purchase ? initialData.min_purchase.toString() : "",
+      });
+    }
+  }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,26 +53,35 @@ export function CouponForm({ onClose }: { onClose: () => void }) {
 
     setIsLoading(true);
     try {
-      // ✅ Tratamento de dados seguro antes de enviar
       const payload = {
         store_id: store.id,
-        code: formData.code.toUpperCase().trim().replace(/\s+/g, ''), // Remove espaços acidentais
+        code: formData.code.toUpperCase().trim().replace(/\s+/g, ''),
         type: formData.type,
         value: parseFloat(formData.value) || 0,
         min_purchase: parseFloat(formData.min_purchase) || 0,
-        is_active: true
+        is_active: initialData ? initialData.is_active : true // Mantém o status original se for edição
       };
 
-      // ✅ Cast seguro para evitar erro de tabela não mapeada localmente
-      const { error } = await (supabase.from('coupons' as any) as any).insert([payload]);
+      if (initialData?.id) {
+        // ✅ MODO EDIÇÃO (Update)
+        const { error } = await (supabase.from('coupons' as any) as any)
+          .update(payload)
+          .eq('id', initialData.id);
 
-      if (error) throw error;
+        if (error) throw error;
+        toast({ title: "Cupom atualizado com sucesso! ✏️" });
+      } else {
+        // ✅ MODO CRIAÇÃO (Insert)
+        const { error } = await (supabase.from('coupons' as any) as any).insert([payload]);
 
-      toast({ title: "Cupom criado com sucesso! 🎟️" });
+        if (error) throw error;
+        toast({ title: "Cupom criado com sucesso! 🎟️" });
+      }
+
       onClose();
     } catch (error: any) {
       toast({
-        title: "Erro ao criar",
+        title: "Erro ao salvar",
         description: error.message?.includes("duplicate") ? "Este código já existe!" : error.message,
         variant: "destructive"
       });
@@ -66,7 +95,9 @@ export function CouponForm({ onClose }: { onClose: () => void }) {
       <div className="flex justify-between items-center border-b border-border pb-4">
         <div className="flex items-center gap-2">
           <Ticket className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-black uppercase tracking-tighter">Novo Cupom</h3>
+          <h3 className="text-lg font-black uppercase tracking-tighter">
+            {initialData ? "Editar Cupom" : "Novo Cupom"}
+          </h3>
         </div>
         <Button type="button" variant="ghost" size="icon" onClick={onClose} className="hover:bg-muted transition-colors">
           <X className="w-5 h-5" />
@@ -82,6 +113,7 @@ export function CouponForm({ onClose }: { onClose: () => void }) {
             onChange={e => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
             className="bg-background border-border font-bold h-12 rounded-xl text-foreground uppercase"
             required
+            disabled={!!initialData} // ✅ Trava o código se for edição (opcional, mas recomendado)
           />
         </div>
 
@@ -133,7 +165,7 @@ export function CouponForm({ onClose }: { onClose: () => void }) {
           Cancelar
         </Button>
         <Button type="submit" className="flex-1 bg-primary text-primary-foreground font-black uppercase text-xs h-12 rounded-xl shadow-lg hover:bg-primary/90" disabled={isLoading}>
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar Cupom"}
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (initialData ? "Salvar Alterações" : "Criar Cupom")}
         </Button>
       </div>
     </form>

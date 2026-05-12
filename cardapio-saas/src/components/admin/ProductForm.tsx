@@ -144,15 +144,15 @@ export function ProductForm({ product, onClose }: ProductFormProps) {
       };
 
       if (product) {
-        const { error } = await supabase
-          .from('products')
+        // ✅ O 'as any' no from() cala a verificação de propriedades excedentes
+        const { error } = await (supabase.from('products') as any)
           .update(productData)
           .eq('id', product.id)
           .eq('store_id', store.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from('products')
+        // ✅ O 'as any' aqui também garante a criação do produto sem erros
+        const { error } = await (supabase.from('products') as any)
           .insert([productData]);
         if (error) throw error;
       }
@@ -217,7 +217,7 @@ export function ProductForm({ product, onClose }: ProductFormProps) {
               <SelectTrigger className="h-12 w-full bg-background border-border text-foreground">
                 <SelectValue placeholder="Selecione a categoria" />
               </SelectTrigger>
-              <SelectContent className="z-[251] bg-card border border-border shadow-2xl rounded-xl">
+              <SelectContent className="z-251 bg-card border border-border shadow-2xl rounded-xl">
                 {categories.length > 0 ? (
                   categories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id} className="cursor-pointer py-3 px-4">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from "react"; // ✅ Movido para o topo
+import { useMemo } from "react";
 import { Trash2, Minus, Plus } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useCart, CartItem } from "@/contexts/CartContext";
@@ -10,15 +10,12 @@ interface CartItemRowProps {
 }
 
 export function CartItemRow({ item }: CartItemRowProps) {
-  const { updateQuantity, removeFromCart } = useCart(); // ✅ Ajuste: no contexto tipado é removeFromCart
+  const { updateQuantity, removeFromCart } = useCart();
 
   const product = item.product;
-  // Fallback seguro caso 'image' venha de retrocompatibilidade
   const imageSource = product.image_url || ((product as any).image !== "/placeholder.svg" ? (product as any).image : null);
 
-  // ✅ CORREÇÃO NA LÓGICA DE SOMA (E considerando preço promocional se houver)
   const itemTotal = useMemo(() => {
-    // Usa promo_price se existir, senão usa o price normal
     const basePrice = product.promo_price || product.price || 0;
 
     const addonsSum = item.selectedAddons?.reduce((sum, a) => {
@@ -61,10 +58,10 @@ export function CartItemRow({ item }: CartItemRowProps) {
           </div>
         )}
 
-        {/* Observações do cliente */}
+        {/* Observações do cliente - BLINDADO CONTRA TEXTOS GIGANTES */}
         {item.observations && (
-          <p className="text-[10px] text-muted-foreground italic mt-1 bg-muted/30 p-1 rounded-lg px-2">
-            " {item.observations} "
+          <p className="text-[10px] text-muted-foreground italic mt-1.5 bg-muted/30 p-1.5 rounded-lg px-2 line-clamp-2 break-all">
+            "{item.observations}"
           </p>
         )}
 
@@ -73,9 +70,8 @@ export function CartItemRow({ item }: CartItemRowProps) {
       </div>
 
       {/* Botões de Ação */}
-      <div className="flex flex-col items-end gap-2">
+      <div className="flex flex-col items-end gap-2 shrink-0">
         <button
-          // ✅ CORREÇÃO CRÍTICA: Usa cartItemId para remover exatamente a linha certa
           onClick={() => removeFromCart(item.cartItemId)}
           className="p-2 text-muted-foreground hover:text-red-500 transition-colors active:scale-90 cursor-pointer"
         >
@@ -84,7 +80,6 @@ export function CartItemRow({ item }: CartItemRowProps) {
 
         <div className="flex items-center border border-border rounded-xl bg-muted/20 p-1">
           <button
-            // ✅ CORREÇÃO CRÍTICA: Usa cartItemId para alterar a quantidade certa
             onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
             disabled={item.quantity <= 1}
             className="w-7 h-7 flex items-center justify-center hover:bg-background transition-colors rounded-lg disabled:opacity-30 cursor-pointer text-foreground"
@@ -95,7 +90,6 @@ export function CartItemRow({ item }: CartItemRowProps) {
           <span className="w-7 text-center text-xs font-black text-foreground">{item.quantity}</span>
 
           <button
-            // ✅ CORREÇÃO CRÍTICA: Usa cartItemId
             onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
             className="w-7 h-7 flex items-center justify-center hover:bg-background transition-colors rounded-lg cursor-pointer text-foreground"
           >

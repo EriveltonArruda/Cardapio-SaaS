@@ -3,15 +3,14 @@
 import { formatPrice } from "@/lib/utils";
 import { Snowflake, Wine, Package, Image as ImageIcon, Tag } from "lucide-react";
 import { useStore } from "@/contexts/StoreContext";
-import { Product } from "@/types"; // ✅ Importando do index.ts
+import { Product } from "@/types";
 
-// ✅ Intersecção: Informamos ao TS que este produto PODE ter um preço original
 interface ProductWithPromo extends Product {
   original_price?: number | null;
 }
 
 interface ProductCardProps {
-  product: ProductWithPromo; // ✅ Tipagem aplicada
+  product: ProductWithPromo;
   onClick: () => void;
 }
 
@@ -21,9 +20,7 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
   const price = Number(product.price);
   const originalPrice = product.original_price ? Number(product.original_price) : 0;
 
-  // 🛡️ BLINDAGEM: Só é "Oferta" se houver preço original E se o plano for PRO
   const isOnSale = originalPrice > price && store?.plan_type === 'pro';
-
   const isAvailable = product.is_available !== false;
 
   return (
@@ -50,14 +47,15 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
             </span>
           )}
 
-          {/* Tags de comida */}
-          {product.is_featured && <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-amber-200">🏆</span>}
-          {product.is_artisanal && <span className="bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-red-200">🥩</span>}
-          {product.is_new && <span className="bg-orange-100 text-orange-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-orange-200">🔥</span>}
-          {product.is_veggie && <span className="bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-green-200">🌱</span>}
-          {product.is_wood_fire && <span className="bg-slate-100 text-slate-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-slate-200">🔥🪵</span>}
+          {/* ✅ Tags Padronizadas (Iguais ao Modal) */}
+          {product.is_featured && <span className="bg-amber-100 text-amber-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-amber-200 uppercase">🏆 Mais Pedido</span>}
+          {product.is_artisanal && <span className="bg-red-100 text-red-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-red-200 uppercase">🥩 Artesanal</span>}
+          {product.is_new && <span className="bg-orange-100 text-orange-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-orange-200 uppercase">🚀 Lançamento</span>}
+          {product.is_veggie && <span className="bg-green-100 text-green-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-green-200 uppercase">🌱 Veggie</span>}
+          {product.is_wood_fire && <span className="bg-stone-100 text-stone-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-stone-200 uppercase">🪵🔥 Fogão a Lenha</span>}
+          {product.is_suggestion && <span className="bg-purple-100 text-purple-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-purple-200 uppercase">💡 Sugestão</span>}
 
-          {/* Badges de bebidas */}
+          {/* Badges de Bebidas */}
           {product.is_cold && <span className="product-badge product-badge-cold"><Snowflake className="w-3.5 h-3.5" /></span>}
           {product.is_alcoholic && <span className="product-badge product-badge-alcoholic"><Wine className="w-3.5 h-3.5" /></span>}
           {product.has_container && <span className="product-badge product-badge-container"><Package className="w-3.5 h-3.5" /></span>}

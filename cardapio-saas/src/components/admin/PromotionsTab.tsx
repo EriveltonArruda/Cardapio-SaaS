@@ -34,6 +34,7 @@ export const PromotionsTab = () => {
   // Estados Cupons
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [showCouponForm, setShowCouponForm] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null); // ✅ Estado de edição de Cupom
 
   const loadData = async () => {
     if (!store?.id) return;
@@ -47,7 +48,6 @@ export const PromotionsTab = () => {
           .order('sort_order', { ascending: true });
         setPromotions((data as Promotion[]) || []);
       } else {
-        // ✅ Ajuste para ler cupons com segurança
         const { data } = await (supabase.from('coupons' as any) as any)
           .select('*')
           .eq('store_id', store.id)
@@ -107,7 +107,15 @@ export const PromotionsTab = () => {
           </TabsList>
 
           <Button
-            onClick={() => activeTab === "banners" ? setShowPromoForm(true) : setShowCouponForm(true)}
+            onClick={() => {
+              if (activeTab === "banners") {
+                setEditingPromotion(null);
+                setShowPromoForm(true);
+              } else {
+                setEditingCoupon(null); // ✅ Limpa a edição ao clicar em Novo
+                setShowCouponForm(true);
+              }
+            }}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest px-6 h-11 rounded-2xl shadow-lg active:scale-95 transition-all"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -198,6 +206,10 @@ export const PromotionsTab = () => {
                         <Badge className={coupon.is_active ? "bg-green-500 hover:bg-green-600 text-white font-black text-[9px]" : "bg-muted text-muted-foreground font-black text-[9px]"}>
                           {coupon.is_active ? "ATIVO" : "PAUSADO"}
                         </Badge>
+                        {/* ✅ ADICIONADO BOTÃO DE EDITAR AQUI */}
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/10" onClick={() => { setEditingCoupon(coupon); setShowCouponForm(true); }}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10" onClick={() => handleDeleteCoupon(coupon.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -232,8 +244,10 @@ export const PromotionsTab = () => {
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-card rounded-3xl w-full max-w-lg shadow-2xl border border-border animate-in zoom-in-95 duration-200 overflow-hidden">
             <CouponForm
+              initialData={editingCoupon} // ✅ PASSANDO OS DADOS PARA EDIÇÃO
               onClose={() => {
                 setShowCouponForm(false);
+                setEditingCoupon(null); // ✅ LIMPA APÓS FECHAR
                 loadData();
               }}
             />

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
-import { Loader2, MapPin, User, Phone as PhoneIcon, Wallet, CreditCard, Banknote, QrCode } from "lucide-react";
+import { Loader2, MapPin, User, Phone as PhoneIcon, Wallet, CreditCard, Banknote, QrCode, Ticket } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
@@ -13,7 +13,8 @@ import { formatPrice } from "@/lib/utils";
 import { Order } from "@/types";
 
 export function CheckoutForm() {
-  const { items, getTotal, clearCart } = useCart();
+  // ✅ Puxando os novos métodos de cálculo de cupom do contexto
+  const { items, getTotal, getSubtotal, getDiscountAmount, coupon, clearCart } = useCart();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,7 +47,13 @@ export function CheckoutForm() {
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const numbers = e.target.value.replace(/\D/g, "");
+    let numbers = e.target.value.replace(/\D/g, "");
+
+    // ✅ SE COLAR COM CÓDIGO DO PAÍS (+55), IGNORA OS DOIS PRIMEIROS DÍGITOS
+    if (numbers.startsWith("55") && numbers.length > 11) {
+      numbers = numbers.slice(2);
+    }
+
     let formatted = numbers;
     if (numbers.length <= 2) formatted = `(${numbers}`;
     else if (numbers.length <= 7) formatted = `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
@@ -65,7 +72,7 @@ export function CheckoutForm() {
     try {
       const total = getTotal();
 
-      // 1. SALVAR NO BANCO DE DADOS (Conforme interface Order)
+      // 1. SALVAR NO BANCO DE DADOS
       const orderPayload: Partial<Order> = {
         store_id: store.id,
         customer_name: formData.name,
@@ -78,7 +85,7 @@ export function CheckoutForm() {
         items: JSON.stringify(items.map(item => ({
           name: item.product.name,
           quantity: item.quantity,
-          price: item.product.promo_price || item.product.price, // ✅ Usa preço promocional se houver
+          price: item.product.promo_price || item.product.price,
           observations: item.observations || "",
           addons: item.selectedAddons?.map(a => ({
             name: a.addon.name,
@@ -133,7 +140,14 @@ export function CheckoutForm() {
       });
 
       message += `------------------------------------------\n`;
-      message += `*TOTAL: ${formatPrice(total)}*\n`;
+
+      // ✅ INSERINDO O CUPOM NO WHATSAPP
+      if (coupon) {
+        message += `*Subtotal:* ${formatPrice(getSubtotal())}\n`;
+        message += `*Cupom (${coupon.code}):* -${formatPrice(getDiscountAmount())}\n`;
+      }
+
+      message += `*TOTAL A PAGAR: ${formatPrice(total)}*\n`;
       message += `*PAGAMENTO:* ${formData.paymentMethod.toUpperCase()}\n`;
       message += `------------------------------------------\n\n`;
 
@@ -294,6 +308,22 @@ export function CheckoutForm() {
       </div>
 
       <div className="pt-6 border-t border-border">
+        {/* ✅ RESUMO DO CUPOM NA TELA DE FINALIZAR */}
+        {coupon && (
+          <>
+            <div className="flex items-center justify-between mb-2 text-muted-foreground">
+              <span className="text-xs font-bold uppercase tracking-widest">Subtotal</span>
+              <span className="text-sm font-bold">{formatPrice(getSubtotal())}</span>
+            </div>
+            <div className="flex items-center justify-between mb-4 text-green-500">
+              <span className="text-xs font-black uppercase tracking-widest flex items-center gap-1">
+                <Ticket className="w-3 h-3" /> Cupom ({coupon.code})
+              </span>
+              <span className="text-sm font-black">-{formatPrice(getDiscountAmount())}</span>
+            </div>
+          </>
+        )}
+
         <div className="flex items-center justify-between mb-6">
           <span className="text-xs font-black uppercase text-muted-foreground tracking-widest">Total Geral</span>
           <span className="text-2xl font-black text-primary tracking-tighter">{formatPrice(getTotal())}</span>

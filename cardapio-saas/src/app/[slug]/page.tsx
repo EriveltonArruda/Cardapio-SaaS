@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, notFound } from "next/navigation"; // ✅ IMPORTADO o notFound
 import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { BannerCarousel } from "@/components/home/BannerCarousel";
@@ -12,10 +12,9 @@ import { Loader2 } from "lucide-react";
 import { supabase } from '@/lib/supabase/client';
 import { useStore } from "@/contexts/StoreContext";
 
-// ✅ Importando as interfaces globais
+// Importando as interfaces globais
 import { Category, Promotion } from "@/types";
 
-// ✅ Estendendo a categoria apenas para o front-end saber que pode existir a tag de oferta
 interface CategoryWithPromo extends Category {
   has_promotion?: boolean;
 }
@@ -26,22 +25,14 @@ export default function Home() {
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   const { store, isLoading: isStoreLoading } = useStore();
-  const router = useRouter();
   const params = useParams();
 
-  // 🛡️ TRAVA DE SEGURANÇA REFORÇADA: Evita o "bate e volta" indevido
-  useEffect(() => {
-    if (!isStoreLoading && !store && params?.slug) {
-      const timer = setTimeout(() => {
-        console.warn("⚠️ Loja não encontrada após tempo de espera. Redirecionando...");
-        router.replace('/');
-      }, 500);
+  // ✅ REDIRECIONAMENTO CORRETO PARA A TELA 404
+  // Se terminou de carregar, não achou a loja e tem um slug na URL, dispara o erro.
+  if (!isStoreLoading && !store && params?.slug) {
+    notFound();
+  }
 
-      return () => clearTimeout(timer);
-    }
-  }, [store, isStoreLoading, router, params?.slug]);
-
-  // Memorizamos a função de carga para evitar que ela mude a cada renderização
   const loadHomeData = useCallback(async (storeId: string) => {
     try {
       setIsDataLoading(true);
@@ -62,7 +53,6 @@ export default function Home() {
       ]);
 
       if (catRes.data) {
-        // ✅ Mantivemos um 'any' temporário no .map() porque a relação 'products(promotion_id)' não existe no tipo base
         const categoriesWithPromo = (catRes.data as any[]).map((cat) => ({
           ...(cat as Category),
           has_promotion: cat.products?.some((p: any) => p.promotion_id !== null)
@@ -71,7 +61,6 @@ export default function Home() {
       }
 
       if (promoRes.data) {
-        // ✅ Cast duplo para garantir que o array de promoções seja validado
         setPromotions((promoRes.data as unknown as Promotion[]) || []);
       }
     } catch (err) {
@@ -87,7 +76,7 @@ export default function Home() {
     }
   }, [store?.id, isStoreLoading, loadHomeData]);
 
-  // 1. Tela de Splash (Respeitando o Dark Mode padrão)
+  // Tela de Splash
   if (isStoreLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
@@ -99,10 +88,9 @@ export default function Home() {
     );
   }
 
-  // 2. Prevenção de renderização sem dados enquanto o redirecionamento não acontece
+  // Prevenção de renderização (Opcional agora, pois o notFound já interrompe o fluxo, mas é bom manter)
   if (!store) return null;
 
-  // 3. Renderização do Cardápio real
   return (
     <AppContainer>
       <div className="min-h-screen bg-background pb-20 transition-colors duration-300">

@@ -8,11 +8,10 @@ import { useStore } from "@/contexts/StoreContext";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase/client";
 
-// ✅ Importações Globais
 import { Product, ProductAddon } from "@/types";
 
 interface ProductDetailModalProps {
-  product: Product; // ✅ Tipagem rígida do produto
+  product: Product;
   onClose: () => void;
 }
 
@@ -20,7 +19,6 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
   const [quantity, setQuantity] = useState(1);
   const [observations, setObservations] = useState("");
 
-  // ✅ Estados tipados corretamente com a interface de Addons
   const [availableAddons, setAvailableAddons] = useState<ProductAddon[]>([]);
   const [selectedAddons, setSelectedAddons] = useState<ProductAddon[]>([]);
   const [isLoadingAddons, setIsLoadingAddons] = useState(false);
@@ -28,7 +26,6 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
   const { addItem } = useCart();
   const { store } = useStore();
 
-  // Busca os adicionais vinculados à categoria deste produto
   useEffect(() => {
     async function fetchAddons() {
       if (!product?.category_id) return;
@@ -54,10 +51,8 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
     fetchAddons();
   }, [product?.category_id]);
 
-  // Cálculo do total dinâmico (Preço base + adicionais) * quantidade
   const calculateTotal = useMemo(() => {
     const addonsSum = selectedAddons.reduce((acc, curr) => acc + curr.price, 0);
-    // ✅ Pega o price ou promo_price se existir
     const currentPrice = product.promo_price || product.price;
     return (currentPrice + addonsSum) * quantity;
   }, [product.price, product.promo_price, selectedAddons, quantity]);
@@ -71,7 +66,6 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
   };
 
   const handleAddToCart = () => {
-    // Enviamos o produto, quantidade, a lista de adicionais selecionados e as observações
     addItem(product, quantity, selectedAddons, observations || "");
     onClose();
   };
@@ -84,9 +78,9 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
     product.is_artisanal ||
     product.is_new ||
     product.is_veggie ||
+    product.is_suggestion ||
     product.is_wood_fire;
 
-  // Usa o promo_price como principal, caso contrário usa o price
   const displayPrice = product.promo_price || product.price;
 
   return (
@@ -108,7 +102,6 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
         </button>
 
         <div className="overflow-y-auto flex-1 pb-24 scrollbar-hide">
-          {/* Imagem do Produto */}
           <div className="w-full h-64 bg-[#FFF] flex items-center justify-center relative overflow-hidden">
             {product.image_url ? (
               <img
@@ -135,12 +128,15 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
                 )}
               </div>
 
-              {/* Tags */}
+              {/* ✅ Tags Padronizadas (Iguais à Lista) */}
               {hasAnyBadge && (
                 <div className="flex flex-wrap items-center gap-2 mt-4">
                   {product.is_featured && <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase">🏆 Mais Pedido</span>}
                   {product.is_artisanal && <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-[10px] font-black uppercase">🥩 Artesanal</span>}
+                  {product.is_new && <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-700 text-[10px] font-black uppercase">🚀 Lançamento</span>}
                   {product.is_veggie && <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-black uppercase">🌱 Veggie</span>}
+                  {product.is_wood_fire && <span className="px-3 py-1 rounded-full bg-stone-100 text-stone-700 text-[10px] font-black uppercase">🪵🔥 Fogão a Lenha</span>}
+                  {product.is_suggestion && <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-[10px] font-black uppercase">💡 Sugestão</span>}
                 </div>
               )}
 
@@ -151,7 +147,6 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
               )}
             </div>
 
-            {/* SEÇÃO DE ADICIONAIS */}
             {isLoadingAddons ? (
               <div className="flex items-center gap-2 py-4">
                 <Loader2 className="w-4 h-4 animate-spin text-primary" />
@@ -213,7 +208,6 @@ export function ProductDetailModal({ product, onClose }: ProductDetailModalProps
           </div>
         </div>
 
-        {/* Footer com Preço e Quantidade */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-background/80 backdrop-blur-md">
           <div className="flex items-center justify-between mb-4 px-2">
             <span className="font-bold text-muted-foreground uppercase text-[10px] tracking-widest">Quantidade</span>

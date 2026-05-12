@@ -25,24 +25,24 @@ export function Header() {
 
   return (
     <header
-      className="sticky top-0 z-50 text-white safe-area-top shadow-md transition-colors"
+      className="sticky top-0 z-50 text-white safe-area-top shadow-lg transition-colors"
       style={{ backgroundColor: 'var(--primary)' }}
     >
       <div className="w-full flex items-center justify-between py-4 px-6">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/30 shadow-sm">
+          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/30 shadow-inner">
             {store?.logo_url ? (
               <img src={store.logo_url} alt={store.name} className="w-full h-full object-cover" />
             ) : (
-              <span className="font-black text-xl">{store?.name?.charAt(0) || "L"}</span>
+              <span className="font-black text-xl drop-shadow-md">{store?.name?.charAt(0) || "L"}</span>
             )}
           </div>
 
           <div>
-            <h1 className="text-base font-black leading-tight uppercase tracking-tighter text-white">
+            <h1 className="text-base font-black leading-tight uppercase tracking-tighter text-white drop-shadow-md">
               {store?.name || "Carregando..."}
             </h1>
-            <p className="text-[10px] font-bold opacity-90 uppercase tracking-wide text-white">
+            <p className="text-[10px] font-bold opacity-90 uppercase tracking-wide text-white drop-shadow-sm">
               Gravatá - PE
             </p>
           </div>
@@ -53,21 +53,21 @@ export function Header() {
           {mounted && (
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-all border border-white/10 cursor-pointer"
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-all border border-white/10 cursor-pointer active:scale-90"
             >
               {theme === 'dark' ? (
-                <Sun className="w-5 h-5 text-yellow-400" />
+                <Sun className="w-5 h-5 text-yellow-300 drop-shadow-md" />
               ) : (
-                <Moon className="w-5 h-5 text-white" />
+                <Moon className="w-5 h-5 text-white drop-shadow-md" />
               )}
             </button>
           )}
 
           <button
             onClick={handleShare}
-            className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-all border border-white/10 cursor-pointer"
+            className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 transition-all border border-white/10 cursor-pointer active:scale-90"
           >
-            <Share2 className="w-5 h-5 text-white" />
+            <Share2 className="w-5 h-5 text-white drop-shadow-md" />
           </button>
         </div>
       </div>
