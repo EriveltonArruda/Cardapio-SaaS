@@ -3,12 +3,16 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { Providers } from "@/components/Providers";
+import { SITE_URL } from "@/lib/site";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 // ✅ SEO Turbinado para WhatsApp, Instagram e Google
+// Nota: a imagem de OG não é declarada aqui — vem de src/app/opengraph-image.tsx,
+// que o Next detecta pela convenção de nome e injeta a tag sozinho.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "SaaS Cardápio Digital | Venda mais pelo WhatsApp",
     template: "%s | Cardápio Digital"
@@ -17,16 +21,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "SaaS Cardápio Digital",
     description: "A forma mais rápida de vender seus produtos no WhatsApp. Crie seu cardápio em minutos!",
-    url: "https://seusite.com.br", // 🚀 TROQUE PELO SEU DOMÍNIO FINAL DEPOIS
+    url: SITE_URL,
     siteName: "SaaS Cardápio Digital",
-    images: [
-      {
-        url: "/og-image.png", // 🚀 DICA: Crie uma imagem de 1200x630px e coloque na pasta public
-        width: 1200,
-        height: 630,
-        alt: "Preview do SaaS Cardápio Digital",
-      },
-    ],
     locale: "pt_BR",
     type: "website",
   },
@@ -34,7 +30,6 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SaaS Cardápio Digital",
     description: "Crie seu cardápio online em minutos.",
-    images: ["/og-image.png"],
   },
 };
 
