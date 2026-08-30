@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 // ✅ IMPORTAÇÕES TIPO E SAAS
 import { supabase } from "@/lib/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
+import { categorySchema, zodErrorsToMap } from "@/lib/validations";
 import { Category } from "@/types"; // Importando do seu index.ts
 
 export const CategoriesTab = () => {
@@ -30,6 +31,7 @@ export const CategoriesTab = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const fetchCategories = async () => {
     if (!store?.id) return;
@@ -90,7 +92,14 @@ export const CategoriesTab = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName.trim() || !store?.id) return;
+    if (!store?.id) return;
+
+    const parsed = categorySchema.safeParse({ name: formName });
+    if (!parsed.success) {
+      setErrors(zodErrorsToMap(parsed.error));
+      return;
+    }
+    setErrors({});
 
     setIsSaving(true);
     try {
@@ -164,6 +173,7 @@ export const CategoriesTab = () => {
     setEditingCategory(null);
     setFormName("");
     setFormImage("");
+    setErrors({});
   };
 
   if (isStoreLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
@@ -223,6 +233,7 @@ export const CategoriesTab = () => {
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase text-foreground">Nome da Categoria</Label>
                 <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Bebidas, Petiscos..." className="h-12 bg-background border-border text-foreground" required />
+                {errors.name && <p className="text-[10px] font-bold text-red-500 uppercase mt-1">{errors.name}</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-xs font-bold uppercase text-foreground">Imagem / Ícone</Label>

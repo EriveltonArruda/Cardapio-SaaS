@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 // ✅ IMPORTAÇÕES DE TIPOS E SAAS
 import { supabase } from "@/lib/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
+import { productSchema, zodErrorsToMap } from "@/lib/validations";
 import { Product, Category } from "@/types"; // Importando do seu index.ts
 
 interface ProductFormProps {
@@ -50,6 +51,7 @@ export function ProductForm({ product, onClose }: ProductFormProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -115,14 +117,19 @@ export function ProductForm({ product, onClose }: ProductFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !priceInput || !store?.id) {
-      toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
+    if (!store?.id) return;
+
+    const priceValue = parseFloat(priceInput.replace(",", ".")) || 0;
+    const parsed = productSchema.safeParse({ name, price: priceValue });
+    if (!parsed.success) {
+      setErrors(zodErrorsToMap(parsed.error));
+      toast({ title: "Confira os campos destacados", variant: "destructive" });
       return;
     }
+    setErrors({});
 
     setIsSaving(true);
     try {
-      const priceValue = parseFloat(priceInput.replace(",", "."));
       const productData = {
         store_id: store.id,
         name: name.trim(),
@@ -201,6 +208,7 @@ export function ProductForm({ product, onClose }: ProductFormProps) {
             <div className="space-y-2">
               <Label className="text-sm font-bold">Nome do Produto *</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Pizza Calabresa" className="h-12 bg-background border-border text-foreground" required />
+              {errors.name && <p className="text-[10px] font-bold text-red-500 uppercase">{errors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-bold">Preço de Venda (R$) *</Label>
@@ -208,6 +216,7 @@ export function ProductForm({ product, onClose }: ProductFormProps) {
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">R$</span>
                 <Input value={priceInput} onChange={(e) => handlePriceChange(e.target.value)} className="pl-10 h-12 font-bold bg-background border-border text-foreground" placeholder="0,00" required />
               </div>
+              {errors.price && <p className="text-[10px] font-bold text-red-500 uppercase">{errors.price}</p>}
             </div>
           </div>
 

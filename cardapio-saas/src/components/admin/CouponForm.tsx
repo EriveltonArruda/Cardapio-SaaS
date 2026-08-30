@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/contexts/StoreContext";
+import { couponSchema, zodErrorsToMap } from "@/lib/validations";
 import { Loader2, X, Ticket } from "lucide-react";
 
 // ✅ Importe ou defina a interface do Cupom aqui para tipar a prop
@@ -22,6 +23,7 @@ export function CouponForm({ onClose, initialData }: CouponFormProps) {
   const { store } = useStore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     code: "",
@@ -46,19 +48,27 @@ export function CouponForm({ onClose, initialData }: CouponFormProps) {
     e.preventDefault();
     if (!store?.id) return;
 
-    if (!formData.code || !formData.value) {
-      toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
+    const parsed = couponSchema.safeParse({
+      code: formData.code.trim().replace(/\s+/g, ''),
+      type: formData.type,
+      value: parseFloat(formData.value),
+      min_purchase: formData.min_purchase ? parseFloat(formData.min_purchase) : undefined,
+    });
+    if (!parsed.success) {
+      setErrors(zodErrorsToMap(parsed.error));
+      toast({ title: "Confira os campos destacados", variant: "destructive" });
       return;
     }
+    setErrors({});
 
     setIsLoading(true);
     try {
       const payload = {
         store_id: store.id,
-        code: formData.code.toUpperCase().trim().replace(/\s+/g, ''),
-        type: formData.type,
-        value: parseFloat(formData.value) || 0,
-        min_purchase: parseFloat(formData.min_purchase) || 0,
+        code: parsed.data.code,
+        type: parsed.data.type,
+        value: parsed.data.value,
+        min_purchase: parsed.data.min_purchase || 0,
         is_active: initialData ? initialData.is_active : true // Mantém o status original se for edição
       };
 
@@ -115,6 +125,7 @@ export function CouponForm({ onClose, initialData }: CouponFormProps) {
             required
             disabled={!!initialData} // ✅ Trava o código se for edição (opcional, mas recomendado)
           />
+          {errors.code && <p className="text-[10px] font-bold text-red-500 uppercase mt-1">{errors.code}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -141,6 +152,7 @@ export function CouponForm({ onClose, initialData }: CouponFormProps) {
               className="bg-background border-border font-bold h-12 rounded-xl text-foreground"
               required
             />
+            {errors.value && <p className="text-[10px] font-bold text-red-500 uppercase mt-1">{errors.value}</p>}
           </div>
         </div>
 
