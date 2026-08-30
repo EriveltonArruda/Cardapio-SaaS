@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
 import { formatPrice } from "@/lib/utils";
+import { checkoutSchema, zodErrorsToMap } from "@/lib/validations";
 
 // ✅ Importações Globais
 import { Order } from "@/types";
@@ -33,17 +34,13 @@ export function CheckoutForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) newErrors.name = "Nome é obrigatório";
-    if (!formData.phone.trim()) newErrors.phone = "WhatsApp é obrigatório";
-    if (!formData.street.trim()) newErrors.street = "A rua é obrigatória";
-    if (!formData.number.trim()) newErrors.number = "O número é obrigatório";
-    if (!formData.neighborhood.trim()) newErrors.neighborhood = "O bairro é obrigatório";
-    if (!formData.landmark.trim()) newErrors.landmark = "Referência é obrigatória";
-    if (!formData.paymentMethod) newErrors.paymentMethod = "Escolha a forma de pagamento";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const parsed = checkoutSchema.safeParse(formData);
+    if (!parsed.success) {
+      setErrors(zodErrorsToMap(parsed.error));
+      return false;
+    }
+    setErrors({});
+    return true;
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -72,8 +69,14 @@ export function CheckoutForm() {
     try {
       const total = getTotal();
 
+      // ✅ Gera o ID no client: com a política de RLS que restringe pedidos
+      // ao dono da loja, um checkout anônimo não consegue mais ler de volta
+      // a linha que acabou de inserir (INSERT público não dá direito a SELECT).
+      const generatedOrderId = crypto.randomUUID();
+
       // 1. SALVAR NO BANCO DE DADOS
       const orderPayload: Partial<Order> = {
+        id: generatedOrderId,
         store_id: store.id,
         customer_name: formData.name,
         customer_phone: formData.phone,
@@ -96,15 +99,13 @@ export function CheckoutForm() {
         status: 'pendente'
       };
 
-      const { data: savedOrder, error: saveError } = await supabase
+      const { error: saveError } = await supabase
         .from('orders')
-        .insert([orderPayload as any])
-        .select()
-        .single();
+        .insert([orderPayload as any]);
 
       if (saveError) throw new Error("Erro ao salvar pedido");
 
-      const orderId = savedOrder?.id?.split('-')[0].toUpperCase() || "NEW";
+      const orderId = generatedOrderId.split('-')[0].toUpperCase();
 
       // 2. BUSCAR DADOS DA LOJA PARA WHATSAPP
       const { data: settings } = await supabase
@@ -113,7 +114,21 @@ export function CheckoutForm() {
         .eq('store_id', store.id)
         .maybeSingle();
 
-      const rawPhone = settings?.phone?.replace(/\D/g, '') || "81979158040";
+      const rawPhone = settings?.phone?.replace(/\D/g, '');
+
+      // ✅ Sem fallback para número pessoal: se a loja não configurou o
+      // WhatsApp, o pedido já ficou salvo (aparece no painel do lojista),
+      // mas não arriscamos mandar o cliente pro número de outra pessoa.
+      if (!rawPhone) {
+        toast({
+          title: "Pedido registrado, mas...",
+          description: "Esta loja ainda não configurou o WhatsApp de pedidos. Entre em contato diretamente com o estabelecimento.",
+        });
+        clearCart();
+        router.push(`/${store.slug}`);
+        return;
+      }
+
       const storePhone = rawPhone.startsWith('55') ? rawPhone : `55${rawPhone}`;
       const storeName = settings?.store_name || store.name || "Loja";
 
@@ -206,6 +221,7 @@ export function CheckoutForm() {
               placeholder="Como te chamamos?"
               className="w-full p-4 border-2 border-transparent rounded-2xl bg-muted/30 font-bold focus:border-primary transition-all outline-none text-foreground"
             />
+            {errors.name && <p className="text-[10px] font-bold text-red-500 uppercase px-2">{errors.name}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -220,6 +236,7 @@ export function CheckoutForm() {
               className="w-full p-4 border-2 border-transparent rounded-2xl bg-muted/30 font-bold focus:border-primary transition-all outline-none text-foreground"
               maxLength={16}
             />
+            {errors.phone && <p className="text-[10px] font-bold text-red-500 uppercase px-2">{errors.phone}</p>}
           </div>
         </div>
 
@@ -233,6 +250,7 @@ export function CheckoutForm() {
               onChange={(e) => setFormData((prev) => ({ ...prev, street: e.target.value }))}
               className="w-full p-4 border-2 border-transparent rounded-2xl bg-muted/30 font-bold focus:border-primary transition-all outline-none text-foreground text-sm"
             />
+            {errors.street && <p className="text-[10px] font-bold text-red-500 uppercase px-2">{errors.street}</p>}
           </div>
           <div className="space-y-1.5">
             <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Nº</Label>
@@ -242,6 +260,7 @@ export function CheckoutForm() {
               onChange={(e) => setFormData((prev) => ({ ...prev, number: e.target.value }))}
               className="w-full p-4 border-2 border-transparent rounded-2xl bg-muted/30 font-bold focus:border-primary transition-all outline-none text-foreground text-sm"
             />
+            {errors.number && <p className="text-[10px] font-bold text-red-500 uppercase px-2">{errors.number}</p>}
           </div>
         </div>
 
@@ -254,6 +273,7 @@ export function CheckoutForm() {
             placeholder="Ex: Centro"
             className="w-full p-4 border-2 border-transparent rounded-2xl bg-muted/30 font-bold focus:border-primary transition-all outline-none text-foreground mb-2"
           />
+          {errors.neighborhood && <p className="text-[10px] font-bold text-red-500 uppercase px-2 mb-2">{errors.neighborhood}</p>}
           <input
             type="text"
             value={formData.landmark}
@@ -261,6 +281,7 @@ export function CheckoutForm() {
             placeholder="Ponto de referência"
             className="w-full p-4 border-2 border-transparent rounded-2xl bg-muted/30 font-bold focus:border-primary transition-all outline-none text-foreground"
           />
+          {errors.landmark && <p className="text-[10px] font-bold text-red-500 uppercase px-2">{errors.landmark}</p>}
         </div>
       </div>
 

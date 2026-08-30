@@ -27,3 +27,7 @@ dist-ssr
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Artefatos locais do TypeScript e da CLI do Supabase
+tsconfig.tsbuildinfo
+supabase/.temp/

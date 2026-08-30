@@ -7,18 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase/client";
-import { Store, Loader2, CheckCircle2, AlertCircle, Phone, Mail, Globe } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { registerSchema, zodErrorsToMap } from "@/lib/validations";
+import { SAAS_LEADS_WHATSAPP } from "@/lib/site";
+import { Store, Loader2, CheckCircle2, AlertCircle, Phone, Mail, Globe, Lock } from "lucide-react";
 
 export default function RegisterPage() {
+  const { signUp } = useAuth();
   const [formData, setFormData] = useState({
     storeName: "",
     slug: "",
     email: "",
     phone: "",
+    password: "",
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSuccess, setIsSuccess] = useState(false);
   const router = useRouter();
 
@@ -46,11 +52,9 @@ export default function RegisterPage() {
     setFormData(prev => ({ ...prev, phone: formatted }));
   };
 
-  // ✅ FUNÇÃO NOVA: Envia o Lead pro seu WhatsApp
+  // ✅ Envia o Lead pro WhatsApp do dono do SaaS (número configurável via
+  // NEXT_PUBLIC_SAAS_LEADS_WHATSAPP, ver src/lib/site.ts)
   const sendLeadToWhatsApp = () => {
-    // 🚀 TROQUE PELO SEU NÚMERO DE WHATSAPP (com DDI e DDD, sem símbolos)
-    const yourPhoneNumber = "5581994530317";
-
     const message = `🚀 *NOVO LEAD: CARDÁPIO DIGITAL*\n\n` +
       `*Loja:* ${formData.storeName}\n` +
       `*Link:* seusaas.com/${formData.slug}\n` +
@@ -59,7 +63,7 @@ export default function RegisterPage() {
       `_A loja foi criada no banco com sucesso._`;
 
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${yourPhoneNumber}&text=${encodedMessage}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${SAAS_LEADS_WHATSAPP}&text=${encodedMessage}`;
 
     // Abre o WhatsApp em uma nova aba
     window.open(whatsappUrl, '_blank');
@@ -67,8 +71,17 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
+    setFieldErrors({});
+
+    const parsed = registerSchema.safeParse(formData);
+    if (!parsed.success) {
+      setFieldErrors(zodErrorsToMap(parsed.error));
+      setError("Confira os campos destacados abaixo.");
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const { data: existingStore } = await supabase
@@ -81,12 +94,26 @@ export default function RegisterPage() {
         throw new Error("Este endereço (URL) já está sendo usado. Tente adicionar uma cidade ou bairro ao nome.");
       }
 
-      const { data: store, error: storeError } = await supabase
-        .from('stores')
+      // ✅ Cria o usuário de autenticação PRIMEIRO. Sem isso, a loja não
+      // tem dono (user_id) e o RLS bloqueia qualquer inserção/edição futura.
+      const { error: signUpError, data: signUpData } = await signUp(formData.email, formData.password);
+      if (signUpError) throw new Error(signUpError.message || "Erro ao criar sua conta de acesso.");
+
+      const newUserId = signUpData?.user?.id;
+      if (!newUserId) {
+        throw new Error(
+          "Conta criada! Verifique seu e-mail para confirmar o acesso antes de continuar."
+        );
+      }
+
+      // ✅ Cast necessário: os tipos gerados do Supabase (integrations/supabase/types.ts)
+      // estão desatualizados e não incluem a coluna `user_id`, que existe de fato na tabela.
+      const { data: store, error: storeError } = await (supabase.from('stores') as any)
         .insert([{
           name: formData.storeName,
           slug: formData.slug,
-          is_active: true
+          is_active: true,
+          user_id: newUserId,
         }])
         .select()
         .single();
@@ -180,6 +207,7 @@ export default function RegisterPage() {
                 className="pl-11 h-14 rounded-xl border-2 border-slate-100 font-bold text-base focus:border-[#1caf08] focus:ring-0 transition-all text-slate-900 bg-slate-50/50"
               />
             </div>
+            {fieldErrors.storeName && <p className="text-[10px] font-bold text-red-500 uppercase px-1">{fieldErrors.storeName}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -196,6 +224,7 @@ export default function RegisterPage() {
                 .meucardapio.com
               </span>
             </div>
+            {fieldErrors.slug && <p className="text-[10px] font-bold text-red-500 uppercase px-1">{fieldErrors.slug}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -211,6 +240,7 @@ export default function RegisterPage() {
                 className="pl-11 h-14 rounded-xl border-2 border-slate-100 font-bold text-sm focus:border-[#1caf08] focus:ring-0 transition-all text-slate-900 bg-slate-50/50"
               />
             </div>
+            {fieldErrors.email && <p className="text-[10px] font-bold text-red-500 uppercase px-1">{fieldErrors.email}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -225,12 +255,30 @@ export default function RegisterPage() {
                 className="pl-11 h-14 rounded-xl border-2 border-slate-100 font-bold text-base focus:border-[#1caf08] focus:ring-0 transition-all text-slate-900 bg-slate-50/50"
               />
             </div>
+            {fieldErrors.phone && <p className="text-[10px] font-bold text-red-500 uppercase px-1">{fieldErrors.phone}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="font-black uppercase text-[10px] tracking-[0.15em] text-slate-400 ml-1">Crie uma Senha de Acesso</Label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input
+                required
+                type="password"
+                minLength={6}
+                placeholder="Mínimo 6 caracteres"
+                value={formData.password}
+                onChange={e => setFormData(p => ({ ...p, password: e.target.value }))}
+                className="pl-11 h-14 rounded-xl border-2 border-slate-100 font-bold text-base focus:border-[#1caf08] focus:ring-0 transition-all text-slate-900 bg-slate-50/50"
+              />
+            </div>
+            {fieldErrors.password && <p className="text-[10px] font-bold text-red-500 uppercase px-1">{fieldErrors.password}</p>}
           </div>
 
           <div className="pt-6">
             <Button
               type="submit"
-              disabled={isLoading || !formData.storeName.trim() || !formData.phone.trim() || !formData.email.trim()}
+              disabled={isLoading || !formData.storeName.trim() || !formData.phone.trim() || !formData.email.trim() || formData.password.length < 6}
               className="w-full h-16 rounded-2xl bg-[#1caf08] hover:bg-green-600 text-white font-black uppercase tracking-[0.2em] text-xs shadow-[0_10px_20px_-10px_rgba(28,175,8,0.5)] active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 disabled:active:scale-100"
             >
               {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : "Criar Meu Cardápio Agora"}
