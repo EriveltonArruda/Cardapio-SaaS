@@ -1,6 +1,7 @@
 'use client';
 
 import { useStore } from "@/contexts/StoreContext";
+import { PLAN_PAYMENT_LINKS, SAAS_UPGRADE_WHATSAPP } from "@/lib/site";
 import { Lock, Sparkles } from "lucide-react";
 
 interface PlanGuardProps {
@@ -35,7 +36,10 @@ export function PlanGuard({ children, featureName }: PlanGuardProps) {
 
         <button
           type="button"
-          onClick={() => window.open(`https://wa.me/5581979158040?text=Olá! Gostaria de fazer o upgrade para o Plano Pro no meu cardápio.`, '_blank')}
+          onClick={() => window.open(
+            PLAN_PAYMENT_LINKS.pro || `https://wa.me/${SAAS_UPGRADE_WHATSAPP}?text=Olá! Gostaria de fazer o upgrade para o Plano Pro no meu cardápio.`,
+            '_blank'
+          )}
           className="bg-primary text-black font-black text-[10px] uppercase rounded-xl h-10 px-6 shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
         >
           <Sparkles className="w-3.5 h-3.5" />

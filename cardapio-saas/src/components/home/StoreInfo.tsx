@@ -5,7 +5,6 @@ import {
   MapPin,
   Clock,
   X,
-  Star,
   CreditCard,
   Smartphone,
   Banknote
@@ -55,16 +54,15 @@ export function StoreInfo() {
 
   return (
     <>
-      {/* Barra de Informações: Sem pedido mínimo / Entrega rápida */}
+      {/* Barra de Informações: endereço resumido + acesso ao perfil da loja */}
       <div className="px-4 py-3 flex items-center justify-between text-[11px] bg-background border-b border-border text-foreground font-bold sticky top-16 z-40 transition-colors animate-in fade-in duration-300">
-        <div className="flex items-center gap-2 uppercase tracking-tighter opacity-80">
-          <span>Sem pedido min</span>
-          <span className="text-border">•</span>
-          <span>Entrega rápida</span>
+        <div className="flex items-center gap-1.5 uppercase tracking-tighter opacity-80 truncate">
+          <MapPin className="w-3 h-3 shrink-0" />
+          <span className="truncate">{store.address || "Ver endereço"}</span>
         </div>
         <button
           onClick={() => setIsOpenModal(true)}
-          className="text-primary font-black uppercase tracking-tighter hover:underline cursor-pointer active:scale-95 transition-transform"
+          className="text-primary font-black uppercase tracking-tighter hover:underline cursor-pointer active:scale-95 transition-transform shrink-0 ml-2"
         >
           Perfil da loja
         </button>
@@ -99,9 +97,6 @@ export function StoreInfo() {
                 </div>
                 <div>
                   <h2 className="text-xl font-black uppercase tracking-tighter leading-tight">{store.name}</h2>
-                  <div className="flex items-center gap-1 mt-1 text-yellow-500 text-sm font-bold">
-                    <Star className="w-4 h-4 fill-current" /> <span>5.0</span>
-                  </div>
                 </div>
               </div>
               <button
