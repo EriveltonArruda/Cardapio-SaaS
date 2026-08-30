@@ -10,6 +10,8 @@ interface StoreContextType {
   store: Store | null;
   isLoading: boolean;
   isOwner: boolean;
+  /** true quando o trial de 7 dias venceu e a loja não tem assinatura ativa */
+  isBlocked: boolean;
 }
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
@@ -29,6 +31,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     // Comparação robusta para evitar problemas de tipagem UUID
     return String(store.user_id).toLowerCase() === String(user.id).toLowerCase();
   }, [user, store]);
+
+  // ✅ Trial de 7 dias: bloqueia quando venceu e não há assinatura ativa
+  const isBlocked = useMemo(() => {
+    if (!store) return false;
+    if (store.subscription_active) return false;
+    if (!store.trial_ends_at) return false;
+    return new Date(store.trial_ends_at).getTime() < Date.now();
+  }, [store]);
 
   // 2. Gerencia o estado de loading quando o slug muda
   useMemo(() => {
@@ -101,7 +111,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           accept_card_credit: activeSettings.accept_card_credit ?? true,
           accept_card_debt: activeSettings.accept_card_debt ?? true,
           accept_cash: activeSettings.accept_cash ?? true,
-          pix_key: activeSettings.pix_key || null
+          pix_key: activeSettings.pix_key || null,
+          trial_ends_at: storeRaw.trial_ends_at,
+          subscription_active: storeRaw.subscription_active ?? false,
         };
 
         // Aplica as cores dinâmicas no CSS
@@ -129,7 +141,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const combinedLoading = isLoading || authLoading;
 
   return (
-    <StoreContext.Provider value={{ store, isLoading: combinedLoading, isOwner }}>
+    <StoreContext.Provider value={{ store, isLoading: combinedLoading, isOwner, isBlocked }}>
       {children}
     </StoreContext.Provider>
   );

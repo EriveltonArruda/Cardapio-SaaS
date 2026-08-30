@@ -24,6 +24,8 @@ export interface Store {
   accept_card_debt: boolean;
   accept_cash: boolean;
   pix_key?: string | null;
+  trial_ends_at: string;
+  subscription_active: boolean;
 }
 
 export interface Product {
