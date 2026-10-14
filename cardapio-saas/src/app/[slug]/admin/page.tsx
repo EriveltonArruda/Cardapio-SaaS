@@ -20,7 +20,9 @@ import {
   Sun,
   Moon,
   Layers,
-  ShieldAlert
+  ShieldAlert,
+  QrCode,
+  BarChart3
 } from "lucide-react";
 
 import { PlanBadge } from "@/components/admin/PlanBadge";
@@ -32,6 +34,8 @@ import { AddonsTab } from "@/components/admin/AddonsTab";
 import { PromotionsTab } from "@/components/admin/PromotionsTab";
 import { OrdersTab } from "@/components/admin/OrdersTab";
 import { ProductAddonsTab } from "@/components/admin/ProductAddonsTab";
+import { QrCodeTab } from "@/components/admin/QrCodeTab";
+import { ReportsTab } from "@/components/admin/ReportsTab";
 
 export default function Admin() {
   const params = useParams();
@@ -73,9 +77,14 @@ export default function Admin() {
         <p className="text-muted-foreground max-w-xs mt-2">
           Seu usuário ({session?.user?.email}) não é o dono da unidade <span className="font-bold text-foreground">{slug}</span>.
         </p>
-        <Button onClick={() => router.push('/')} variant="outline" className="mt-6 uppercase font-bold">
-          Voltar ao Início
-        </Button>
+        <div className="flex flex-col gap-3 mt-6 w-full max-w-xs">
+          <Button onClick={handleLogout} className="uppercase font-bold">
+            <LogOut className="w-4 h-4 mr-2" /> Sair e entrar com outra conta
+          </Button>
+          <Button onClick={() => router.push('/')} variant="outline" className="uppercase font-bold">
+            Voltar ao Início
+          </Button>
+        </div>
       </div>
     );
   }
@@ -133,6 +142,9 @@ export default function Admin() {
             <TabsTrigger value="orders" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <ShoppingBag className="w-4 h-4" /> Pedidos
             </TabsTrigger>
+            <TabsTrigger value="reports" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <BarChart3 className="w-4 h-4" /> Relatórios
+            </TabsTrigger>
             <TabsTrigger value="products" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Package className="w-4 h-4" /> Produtos
             </TabsTrigger>
@@ -148,12 +160,21 @@ export default function Admin() {
             <TabsTrigger value="promotions" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Gift className="w-4 h-4" /> Promoções
             </TabsTrigger>
+            <TabsTrigger value="qrcode" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <QrCode className="w-4 h-4" /> QR Code
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 min-w-25 gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Settings className="w-4 h-4" /> Config
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="mt-0"><OrdersTab /></TabsContent>
+
+          <TabsContent value="reports" className="mt-0">
+            <PlanGuard featureName="Relatórios de Vendas">
+              <ReportsTab />
+            </PlanGuard>
+          </TabsContent>
           <TabsContent value="products" className="mt-0"><ProductsTab /></TabsContent>
           <TabsContent value="categories" className="mt-0"><CategoriesTab /></TabsContent>
 
@@ -168,6 +189,12 @@ export default function Admin() {
           <TabsContent value="promotions" className="mt-0">
             <PlanGuard featureName="Gestão de Promoções">
               <PromotionsTab />
+            </PlanGuard>
+          </TabsContent>
+
+          <TabsContent value="qrcode" className="mt-0">
+            <PlanGuard featureName="QR Code do Cardápio">
+              <QrCodeTab />
             </PlanGuard>
           </TabsContent>
 
