@@ -36,6 +36,7 @@ interface CartContextType {
   clearCart: () => void;
   getSubtotal: () => number;
   getDiscountAmount: () => number;
+  getDeliveryFee: () => number;
   getTotal: () => number;
   applyCoupon: (code: string) => Promise<{ success: boolean; message: string }>;
   removeCoupon: () => void;
@@ -176,10 +177,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return coupon.value;
   };
 
+  // ✅ Taxa de entrega (feature Pro): valor fixo configurado em store_settings,
+  // com opção de "grátis acima de R$ X" baseado no subtotal (antes do cupom).
+  const getDeliveryFee = () => {
+    if (!store?.delivery_fee) return 0;
+    const subtotal = getSubtotal();
+    if (store.free_delivery_min != null && subtotal >= store.free_delivery_min) return 0;
+    return store.delivery_fee;
+  };
+
   const getTotal = () => {
     const subtotal = getSubtotal();
     const discount = getDiscountAmount();
-    return Math.max(0, subtotal - discount); // Garante que nunca vai dar valor negativo
+    const deliveryFee = getDeliveryFee();
+    return Math.max(0, subtotal - discount) + deliveryFee;
   };
 
   // ✅ Busca o cupom no Supabase burlando o TypeScript exigente
@@ -237,6 +248,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         getSubtotal,
         getDiscountAmount,
+        getDeliveryFee,
         getTotal,
         applyCoupon,
         removeCoupon,

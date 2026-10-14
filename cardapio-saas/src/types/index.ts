@@ -26,6 +26,8 @@ export interface Store {
   pix_key?: string | null;
   trial_ends_at: string;
   subscription_active: boolean;
+  delivery_fee: number;
+  free_delivery_min: number | null;
 }
 
 export interface Product {
@@ -94,6 +96,8 @@ export interface StoreSettings {
   accept_card_debt: boolean;
   accept_cash: boolean;
   pix_key?: string | null;
+  delivery_fee?: number;
+  free_delivery_min?: number | null;
   updated_at?: string;
 }
 
@@ -126,6 +130,7 @@ export interface Order {
   address_neighborhood: string;
   address_landmark?: string | null;
   items: any; // Armazena o JSON dos produtos, adicionais e observações
+  delivery_fee?: number;
   created_at: string;
 }
 

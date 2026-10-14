@@ -15,7 +15,7 @@ import { Order } from "@/types";
 
 export function CheckoutForm() {
   // ✅ Puxando os novos métodos de cálculo de cupom do contexto
-  const { items, getTotal, getSubtotal, getDiscountAmount, coupon, clearCart } = useCart();
+  const { items, getTotal, getSubtotal, getDiscountAmount, getDeliveryFee, coupon, clearCart } = useCart();
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,6 +96,7 @@ export function CheckoutForm() {
           })) || []
         }))),
         total_amount: total,
+        delivery_fee: getDeliveryFee(),
         status: 'pendente'
       };
 
@@ -160,6 +161,10 @@ export function CheckoutForm() {
       if (coupon) {
         message += `*Subtotal:* ${formatPrice(getSubtotal())}\n`;
         message += `*Cupom (${coupon.code}):* -${formatPrice(getDiscountAmount())}\n`;
+      }
+
+      if (getDeliveryFee() > 0) {
+        message += `*Taxa de entrega:* ${formatPrice(getDeliveryFee())}\n`;
       }
 
       message += `*TOTAL A PAGAR: ${formatPrice(total)}*\n`;

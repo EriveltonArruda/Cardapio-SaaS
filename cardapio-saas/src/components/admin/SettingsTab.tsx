@@ -17,7 +17,8 @@ import {
   Palette,
   CreditCard,
   Smartphone,
-  Banknote
+  Banknote,
+  Bike
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/contexts/StoreContext";
@@ -50,6 +51,8 @@ export function SettingsTab() {
     accept_card_debt: true,
     accept_cash: true,
     pix_key: "",
+    delivery_fee: 0,
+    free_delivery_min: null,
     store_id: ""
   });
 
@@ -274,6 +277,38 @@ export function SettingsTab() {
           </div>
         </CardContent>
       </Card>
+
+      <PlanGuard featureName="Taxa de Entrega">
+        <Card className="rounded-2xl border border-border shadow-sm bg-card">
+          <CardHeader><CardTitle className="text-sm uppercase font-black text-muted-foreground flex items-center gap-2"><Bike className="w-4 h-4" /> Taxa de Entrega</CardTitle></CardHeader>
+          <CardContent className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label className="text-[10px] font-black uppercase text-muted-foreground">Valor da Entrega (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0,00"
+                value={settings.delivery_fee ?? 0}
+                onChange={(e) => handleChange('delivery_fee', parseFloat(e.target.value) || 0)}
+                className="rounded-xl font-bold bg-background border-border text-foreground"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] font-black uppercase text-muted-foreground">Grátis Acima de (R$, opcional)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Ex: 50,00"
+                value={settings.free_delivery_min ?? ""}
+                onChange={(e) => handleChange('free_delivery_min', e.target.value ? parseFloat(e.target.value) : null)}
+                className="rounded-xl font-bold bg-background border-border text-foreground"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </PlanGuard>
 
       <Card className="rounded-2xl border border-border shadow-sm bg-card">
         <CardHeader><CardTitle className="text-sm uppercase font-black text-muted-foreground flex items-center gap-2"><Clock className="w-4 h-4" /> Horários</CardTitle></CardHeader>

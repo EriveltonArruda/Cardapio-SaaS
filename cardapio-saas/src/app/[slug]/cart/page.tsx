@@ -11,6 +11,7 @@ import { AppContainer } from "@/components/layout/AppContainer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
+import { useStore } from "@/contexts/StoreContext";
 import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,7 +21,8 @@ export default function Cart() {
   const { toast } = useToast();
   const slug = params?.slug as string;
 
-  const { items, clearCart, getSubtotal, getDiscountAmount, getTotal, coupon, applyCoupon, removeCoupon } = useCart();
+  const { items, clearCart, getSubtotal, getDiscountAmount, getDeliveryFee, getTotal, coupon, applyCoupon, removeCoupon } = useCart();
+  const { store } = useStore();
 
   const [showCheckout, setShowCheckout] = useState(false);
   const [couponCode, setCouponCode] = useState("");
@@ -148,6 +150,20 @@ export default function Cart() {
                     <span>Desconto</span>
                     <span>- {formatPrice(getDiscountAmount())}</span>
                   </div>
+                )}
+
+                {!!store?.delivery_fee && (
+                  getDeliveryFee() > 0 ? (
+                    <div className="flex justify-between items-center text-sm font-bold text-muted-foreground">
+                      <span>Taxa de entrega</span>
+                      <span>{formatPrice(getDeliveryFee())}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center text-sm font-bold text-green-500">
+                      <span>Taxa de entrega</span>
+                      <span>Grátis</span>
+                    </div>
+                  )
                 )}
               </div>
             </div>

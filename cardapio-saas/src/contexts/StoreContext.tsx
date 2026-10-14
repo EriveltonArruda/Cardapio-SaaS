@@ -114,6 +114,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           pix_key: activeSettings.pix_key || null,
           trial_ends_at: storeRaw.trial_ends_at,
           subscription_active: storeRaw.subscription_active ?? false,
+          delivery_fee: Number(activeSettings.delivery_fee) || 0,
+          free_delivery_min: activeSettings.free_delivery_min != null ? Number(activeSettings.free_delivery_min) : null,
         };
 
         // Aplica as cores dinâmicas no CSS
