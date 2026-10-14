@@ -13,12 +13,17 @@ import {
   Undo2,
   Package,
   Wallet,
-  Search
+  Search,
+  Bell,
+  BellOff,
+  Printer
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/contexts/StoreContext";
 import { ToastAction } from "@/components/ui/toast";
 import { Order } from "@/types"; // ✅ Importando do seu index.ts
+import { playOrderSound, isOrderSoundEnabled, setOrderSoundEnabled } from "@/lib/notificationSound";
+import { printOrderReceipt } from "@/lib/printReceipt";
 
 const formatPrice = (value: number) => {
   return new Intl.NumberFormat("pt-BR", {
@@ -35,6 +40,18 @@ export function OrdersTab() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const { toast } = useToast();
   const { store, isLoading: isStoreLoading } = useStore();
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  useEffect(() => {
+    setSoundEnabled(isOrderSoundEnabled());
+  }, []);
+
+  const toggleSound = () => {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    setOrderSoundEnabled(next);
+    if (next) playOrderSound(); // ✅ o clique já serve como gesto pra "destravar" o áudio no navegador
+  };
 
   const fetchOrders = async () => {
     try {
@@ -119,7 +136,15 @@ export function OrdersTab() {
     const channel = supabase.channel('orders-admin').on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'orders', filter: `store_id=eq.${store.id}` },
-      () => fetchOrders()
+      (payload) => {
+        // ✅ Toca o som só em pedido NOVO de verdade, não em toda atualização
+        // de status que o próprio lojista faz (finalizar/cancelar/reativar).
+        if (payload.eventType === 'INSERT') {
+          if (isOrderSoundEnabled()) playOrderSound();
+          toast({ title: "Novo pedido recebido! 🔔" });
+        }
+        fetchOrders();
+      }
     ).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [filter, limit, selectedDate, store?.id, isStoreLoading]);
@@ -153,9 +178,19 @@ export function OrdersTab() {
               />
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-black text-foreground leading-none">{orders.length}</p>
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Pedidos</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleSound}
+              title={soundEnabled ? "Som de novo pedido ligado" : "Som de novo pedido desligado"}
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all cursor-pointer ${soundEnabled ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                }`}
+            >
+              {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+            </button>
+            <div className="text-right">
+              <p className="text-2xl font-black text-foreground leading-none">{orders.length}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">Pedidos</p>
+            </div>
           </div>
         </div>
 
@@ -205,9 +240,18 @@ export function OrdersTab() {
                   </div>
                   <h3 className="font-black text-xl text-foreground tracking-tight">{order.customer_name}</h3>
                 </div>
-                <div className="text-right">
-                  <p className="font-black text-2xl text-primary tracking-tighter">{formatPrice(order.total_amount || 0)}</p>
-                  <p className="text-[9px] font-black uppercase text-muted-foreground">{order.payment_method || 'PAGAMENTO A COMBINAR'}</p>
+                <div className="flex items-start gap-3">
+                  <div className="text-right">
+                    <p className="font-black text-2xl text-primary tracking-tighter">{formatPrice(order.total_amount || 0)}</p>
+                    <p className="text-[9px] font-black uppercase text-muted-foreground">{order.payment_method || 'PAGAMENTO A COMBINAR'}</p>
+                  </div>
+                  <button
+                    onClick={() => printOrderReceipt(order, store.name)}
+                    title="Imprimir comanda"
+                    className="w-9 h-9 rounded-xl bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary flex items-center justify-center transition-all cursor-pointer shrink-0"
+                  >
+                    <Printer className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
