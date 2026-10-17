@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AppContainer } from "@/components/layout/AppContainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -287,7 +288,9 @@ export default function RegisterPage() {
         </form>
 
         <footer className="mt-auto pt-10 text-[9px] text-slate-400 text-center uppercase leading-relaxed font-bold tracking-widest">
-          Ao criar sua loja, você aceita nossos <br /> termos de uso e políticas de privacidade.
+          Ao criar sua loja, você aceita nossos <br />
+          <Link href="/termos" className="underline hover:text-slate-600">termos de uso</Link> e{" "}
+          <Link href="/privacidade" className="underline hover:text-slate-600">política de privacidade</Link>.
         </footer>
       </div>
     </AppContainer>
