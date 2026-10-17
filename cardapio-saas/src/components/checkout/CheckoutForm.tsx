@@ -168,6 +168,11 @@ export function CheckoutForm() {
       // WhatsApp, o pedido já ficou salvo (aparece no painel do lojista),
       // mas não arriscamos mandar o cliente pro número de outra pessoa.
       if (!rawPhone) {
+        try {
+          localStorage.setItem(`customer-phone-${store.id}`, formData.phone);
+        } catch {
+          // localStorage pode não estar disponível (modo privado, etc.)
+        }
         toast({
           title: "Pedido registrado, mas...",
           description: "Esta loja ainda não configurou o WhatsApp de pedidos. Entre em contato diretamente com o estabelecimento.",
@@ -233,6 +238,13 @@ export function CheckoutForm() {
 
       const encodedMessage = encodeURIComponent(message);
       const whatsappLink = `https://api.whatsapp.com/send?phone=${storePhone}&text=${encodedMessage}`;
+
+      // ✅ Salva o telefone pra pré-preencher a consulta em "Meus Pedidos"
+      try {
+        localStorage.setItem(`customer-phone-${store.id}`, formData.phone);
+      } catch {
+        // localStorage pode não estar disponível (modo privado, etc.)
+      }
 
       toast({ title: "Pedido enviado com sucesso!" });
       clearCart();
