@@ -28,6 +28,9 @@ export interface Store {
   subscription_active: boolean;
   delivery_fee: number;
   free_delivery_min: number | null;
+  loyalty_enabled: boolean;
+  loyalty_orders_required: number;
+  loyalty_discount_percent: number;
 }
 
 export interface Product {
@@ -98,7 +101,20 @@ export interface StoreSettings {
   pix_key?: string | null;
   delivery_fee?: number;
   free_delivery_min?: number | null;
+  loyalty_enabled?: boolean;
+  loyalty_orders_required?: number;
+  loyalty_discount_percent?: number;
   updated_at?: string;
+}
+
+export interface LoyaltyStatus {
+  enabled: boolean;
+  orders_required: number;
+  discount_percent: number;
+  completed_orders: number;
+  orders_until_next: number;
+  has_unredeemed_reward: boolean;
+  reward_id: string | null;
 }
 
 export interface CartSuggestion {

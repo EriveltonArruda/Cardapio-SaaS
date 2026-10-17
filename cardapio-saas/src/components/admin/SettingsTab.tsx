@@ -18,7 +18,8 @@ import {
   CreditCard,
   Smartphone,
   Banknote,
-  Bike
+  Bike,
+  Gift
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useStore } from "@/contexts/StoreContext";
@@ -53,6 +54,9 @@ export function SettingsTab() {
     pix_key: "",
     delivery_fee: 0,
     free_delivery_min: null,
+    loyalty_enabled: false,
+    loyalty_orders_required: 10,
+    loyalty_discount_percent: 10,
     store_id: ""
   });
 
@@ -306,6 +310,53 @@ export function SettingsTab() {
                 className="rounded-xl font-bold bg-background border-border text-foreground"
               />
             </div>
+          </CardContent>
+        </Card>
+      </PlanGuard>
+
+      <PlanGuard featureName="Programa de Fidelidade">
+        <Card className="rounded-2xl border border-border shadow-sm bg-card">
+          <CardHeader>
+            <CardTitle className="text-sm uppercase font-black text-muted-foreground flex items-center gap-2"><Gift className="w-4 h-4" /> Programa de Fidelidade</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/50">
+              <div className="space-y-0.5">
+                <Label className="font-bold cursor-pointer">Ativar Fidelidade</Label>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+                  A cada N pedidos concluídos, o cliente ganha desconto no próximo
+                </p>
+              </div>
+              <Switch checked={settings.loyalty_enabled} onCheckedChange={(c) => handleChange('loyalty_enabled', c)} className={switchContrastClass} />
+            </div>
+
+            {settings.loyalty_enabled && (
+              <div className="grid md:grid-cols-2 gap-4 animate-in slide-in-from-top-2">
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground">Pedidos necessários</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={settings.loyalty_orders_required ?? 10}
+                    onChange={(e) => handleChange('loyalty_orders_required', parseInt(e.target.value) || 1)}
+                    className="rounded-xl font-bold bg-background border-border text-foreground"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-black uppercase text-muted-foreground">Desconto na recompensa (%)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    step="1"
+                    value={settings.loyalty_discount_percent ?? 10}
+                    onChange={(e) => handleChange('loyalty_discount_percent', parseFloat(e.target.value) || 1)}
+                    className="rounded-xl font-bold bg-background border-border text-foreground"
+                  />
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </PlanGuard>

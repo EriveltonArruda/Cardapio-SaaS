@@ -116,6 +116,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           subscription_active: storeRaw.subscription_active ?? false,
           delivery_fee: Number(activeSettings.delivery_fee) || 0,
           free_delivery_min: activeSettings.free_delivery_min != null ? Number(activeSettings.free_delivery_min) : null,
+          loyalty_enabled: activeSettings.loyalty_enabled ?? false,
+          loyalty_orders_required: Number(activeSettings.loyalty_orders_required) || 10,
+          loyalty_discount_percent: Number(activeSettings.loyalty_discount_percent) || 10,
         };
 
         // Aplica as cores dinâmicas no CSS

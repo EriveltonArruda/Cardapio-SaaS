@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
-import { Loader2, MapPin, User, Phone as PhoneIcon, Wallet, CreditCard, Banknote, QrCode, Ticket } from "lucide-react";
+import { Loader2, MapPin, User, Phone as PhoneIcon, Wallet, CreditCard, Banknote, QrCode, Ticket, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase/client";
 import { useStore } from "@/contexts/StoreContext";
@@ -11,7 +11,7 @@ import { formatPrice } from "@/lib/utils";
 import { checkoutSchema, zodErrorsToMap } from "@/lib/validations";
 
 // ✅ Importações Globais
-import { Order } from "@/types";
+import { Order, LoyaltyStatus } from "@/types";
 
 export function CheckoutForm() {
   // ✅ Puxando os novos métodos de cálculo de cupom do contexto
@@ -20,6 +20,7 @@ export function CheckoutForm() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { store } = useStore();
+  const [loyaltyStatus, setLoyaltyStatus] = useState<LoyaltyStatus | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -32,6 +33,41 @@ export function CheckoutForm() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // ✅ Fidelidade: consulta o progresso do telefone digitado (com debounce,
+  // só quando parece um telefone completo) via RPC pública no banco — ver
+  // migration 20261014120000_loyalty_program.sql. Não expõe dados de
+  // ninguém além de quem digitou exatamente esse telefone.
+  useEffect(() => {
+    if (!store?.loyalty_enabled || !store?.id) {
+      setLoyaltyStatus(null);
+      return;
+    }
+    const digits = formData.phone.replace(/\D/g, "");
+    if (digits.length < 10) {
+      setLoyaltyStatus(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      // ✅ Cast necessário: get_loyalty_status não existe nos tipos gerados
+      // do Supabase (mesmo motivo documentado em outros `as any` do projeto)
+      const { data, error } = await (supabase.rpc as any)("get_loyalty_status", {
+        p_store_id: store.id,
+        p_phone: digits,
+      });
+      const result = (data as LoyaltyStatus[] | null)?.[0];
+      if (!error && result) {
+        setLoyaltyStatus(result);
+      }
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [formData.phone, store?.loyalty_enabled, store?.id]);
+
+  const loyaltyDiscount = loyaltyStatus?.has_unredeemed_reward
+    ? getSubtotal() * ((loyaltyStatus.discount_percent || 0) / 100)
+    : 0;
 
   const validateForm = () => {
     const parsed = checkoutSchema.safeParse(formData);
@@ -67,7 +103,9 @@ export function CheckoutForm() {
     setIsSubmitting(true);
 
     try {
-      const total = getTotal();
+      // ✅ Desconto de fidelidade some do total só aqui, no momento de
+      // fechar o pedido — getTotal() do carrinho não sabe do telefone.
+      const total = Math.max(0, getTotal() - loyaltyDiscount);
 
       // ✅ Gera o ID no client: com a política de RLS que restringe pedidos
       // ao dono da loja, um checkout anônimo não consegue mais ler de volta
@@ -105,6 +143,15 @@ export function CheckoutForm() {
         .insert([orderPayload as any]);
 
       if (saveError) throw new Error("Erro ao salvar pedido");
+
+      // ✅ Marca a recompensa de fidelidade como usada, já vinculada a
+      // este pedido (a função confere no banco que é o mesmo telefone).
+      if (loyaltyStatus?.has_unredeemed_reward && loyaltyStatus.reward_id) {
+        await (supabase.rpc as any)('redeem_loyalty_reward', {
+          p_reward_id: loyaltyStatus.reward_id,
+          p_order_id: generatedOrderId,
+        });
+      }
 
       const orderId = generatedOrderId.split('-')[0].toUpperCase();
 
@@ -165,6 +212,10 @@ export function CheckoutForm() {
 
       if (getDeliveryFee() > 0) {
         message += `*Taxa de entrega:* ${formatPrice(getDeliveryFee())}\n`;
+      }
+
+      if (loyaltyDiscount > 0) {
+        message += `*Desconto Fidelidade (${loyaltyStatus?.discount_percent}%):* -${formatPrice(loyaltyDiscount)}\n`;
       }
 
       message += `*TOTAL A PAGAR: ${formatPrice(total)}*\n`;
@@ -244,6 +295,25 @@ export function CheckoutForm() {
             {errors.phone && <p className="text-[10px] font-bold text-red-500 uppercase px-2">{errors.phone}</p>}
           </div>
         </div>
+
+        {/* Fidelidade */}
+        {loyaltyStatus?.enabled && (
+          loyaltyStatus.has_unredeemed_reward ? (
+            <div className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/30 rounded-2xl animate-in fade-in slide-in-from-top-2">
+              <Gift className="w-5 h-5 text-primary shrink-0" />
+              <p className="text-xs font-bold text-foreground">
+                🎉 Você ganhou <span className="text-primary font-black">{loyaltyStatus.discount_percent}% de desconto</span> nesse pedido!
+              </p>
+            </div>
+          ) : loyaltyStatus.completed_orders > 0 ? (
+            <div className="flex items-center gap-3 p-4 bg-muted/30 border border-border rounded-2xl animate-in fade-in slide-in-from-top-2">
+              <Gift className="w-5 h-5 text-muted-foreground shrink-0" />
+              <p className="text-xs font-bold text-muted-foreground">
+                Faltam <span className="text-foreground font-black">{loyaltyStatus.orders_until_next}</span> pedido(s) para você ganhar {loyaltyStatus.discount_percent}% de desconto!
+              </p>
+            </div>
+          ) : null
+        )}
 
         {/* Localização */}
         <div className="grid grid-cols-3 gap-3">
@@ -350,9 +420,18 @@ export function CheckoutForm() {
           </>
         )}
 
+        {loyaltyDiscount > 0 && (
+          <div className="flex items-center justify-between mb-4 text-green-500">
+            <span className="text-xs font-black uppercase tracking-widest flex items-center gap-1">
+              <Gift className="w-3 h-3" /> Fidelidade ({loyaltyStatus?.discount_percent}%)
+            </span>
+            <span className="text-sm font-black">-{formatPrice(loyaltyDiscount)}</span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-6">
           <span className="text-xs font-black uppercase text-muted-foreground tracking-widest">Total Geral</span>
-          <span className="text-2xl font-black text-primary tracking-tighter">{formatPrice(getTotal())}</span>
+          <span className="text-2xl font-black text-primary tracking-tighter">{formatPrice(Math.max(0, getTotal() - loyaltyDiscount))}</span>
         </div>
 
         <button
