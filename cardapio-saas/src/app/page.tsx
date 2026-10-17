@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AppContainer } from "@/components/layout/AppContainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,6 +115,13 @@ export default function WelcomePage() {
           >
             <Sparkles className="w-4 h-4" /> Quero criar meu cardápio grátis
           </Button>
+
+          <Link
+            href="/planos"
+            className="block mt-3 text-center text-[10px] font-black text-muted-foreground uppercase tracking-widest hover:text-foreground hover:underline"
+          >
+            Ver planos e preços
+          </Link>
         </div>
 
         <div className="mt-12 pt-8 border-t border-dashed border-border w-full max-w-sm">
